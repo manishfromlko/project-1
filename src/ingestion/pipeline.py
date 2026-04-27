@@ -46,6 +46,8 @@ class IngestionPipeline:
     def run(self) -> None:
         self.ingestion_run.workspace_scope = [p.name for p in safe_list_dir(self.root) if p.is_dir()]
         self.ingestion_run.status = "running"
+        if self.mode == "incremental":
+            self.storage._load()  # Load existing data for incremental
         for workspace_dir in self._list_workspaces():
             workspace = self._ingest_workspace(workspace_dir)
             self.storage.write_workspace(workspace)
@@ -55,7 +57,7 @@ class IngestionPipeline:
             self.storage.save()
 
     def _list_workspaces(self) -> Iterable[Path]:
-        return [path for path in safe_list_dir(self.root) if path.is_dir()]
+        return [path for path in safe_list_dir(self.root) if path.is_dir() and path.name != '.ingestion']
 
     def _ingest_workspace(self, workspace_dir: Path) -> Workspace:
         workspace_id = normalize_workspace_id(workspace_dir.name)
@@ -78,8 +80,25 @@ class IngestionPipeline:
                 continue
             classification = classify_file(path)
             file_type = SUPPORTED_EXTENSIONS.get(path.suffix.lower(), FileType.UNSUPPORTED)
+            current_hash = compute_file_hash(path)
+            artifact_id = f"{workspace_id}:{path.relative_to(workspace_dir)}"
+
+            existing_hash = self.storage.get_artifact_hash(artifact_id) if self.mode == "incremental" else None
+            if existing_hash is None:
+                status = IngestionStatus.NEW
+            elif existing_hash == current_hash:
+                status = IngestionStatus.UNCHANGED
+            else:
+                status = IngestionStatus.UPDATED
+
+            if self.mode == "incremental" and status == IngestionStatus.UNCHANGED:
+                # For unchanged files in incremental mode, update status in place
+                if artifact_id in self.storage._catalog.get("artifacts", {}):
+                    self.storage._catalog["artifacts"][artifact_id]["ingestion_status"] = "unchanged"
+                continue
+
             artifact = FileArtifact(
-                artifact_id=f"{workspace_id}:{path.relative_to(workspace_dir)}",
+                artifact_id=artifact_id,
                 workspace_id=workspace_id,
                 relative_path=str(path.relative_to(workspace_dir)),
                 file_name=path.name,
@@ -87,15 +106,13 @@ class IngestionPipeline:
                 mime_type=None,
                 size_bytes=path.stat().st_size,
                 last_modified_at=datetime.datetime.fromtimestamp(path.stat().st_mtime),
-                ingestion_status=IngestionStatus.SKIPPED
-                if classification["decision"] == "skipped"
-                else IngestionStatus.NEW,
+                ingestion_status=status,
                 classification={
                     "decision": classification["decision"],
                     "matched_pattern": classification["matched_pattern"],
                     "category": classification["classification"],
                 },
-                content_hash=compute_file_hash(path),
+                content_hash=current_hash,
                 capture_source={"source_path": str(path.resolve())},
             )
 

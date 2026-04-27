@@ -16,6 +16,23 @@ python -m pip install langchain litellm pymilvus pydantic pytest
 
 > Note: The initial ingestion pipeline is backend-first. Additional dependencies for Langfuse, Milvus, and frontend UI are added later when retrieval and generation features are implemented.
 
+## Code quality
+
+To maintain code quality, run the following:
+
+```bash
+# Format code
+python -m pip install black
+black src/ tests/
+
+# Lint code
+python -m pip install flake8
+flake8 src/ tests/
+
+# Run tests
+python -m pytest tests/
+```
+
 ## Run initial ingestion
 
 ```bash
@@ -27,6 +44,8 @@ python -m src.ingestion.cli --root dataset/ --mode full
 ```bash
 python -m src.ingestion.cli --root dataset/ --mode incremental
 ```
+
+Incremental mode only processes files that have been added or modified since the last ingestion run. It preserves existing metadata for unchanged files and updates records for modified ones. This is more efficient for regular updates to large workspaces.
 
 ## Validate output
 

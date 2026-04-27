@@ -40,43 +40,43 @@
 
 ---
 
-## Phase 4: User Story 2 - Incremental Update and File Change Tracking (Priority: P2)
+## Phase 4: User Story 2 - Incremental Update and File Change Tracking (Priority: P2) ✅
 
 **Goal**: Enable the pipeline to reprocess only new or modified files and preserve unchanged records.
 
 **Independent Test**: Modify or add workspace files, run incremental mode, and verify only changed artifacts are updated.
 
-- [ ] T019 [US2] Implement content hashing or timestamp comparison in `src/ingestion/storage.py` for incremental detection
-- [ ] T020 [US2] Add incremental ingestion logic in `src/ingestion/pipeline.py` with `--mode incremental`
-- [ ] T021 [US2] Persist `ingestion_status` values `new`, `unchanged`, and `updated` in artifact records
-- [ ] T022 [US2] Create integration test `tests/ingestion/integration/test_incremental_ingestion.py`
-- [ ] T023 [US2] Document incremental execution semantics in `specs/001-data-ingestion-pipeline/quickstart.md`
+- [X] T019 [US2] Implement content hashing or timestamp comparison in `src/ingestion/storage.py` for incremental detection
+- [X] T020 [US2] Add incremental ingestion logic in `src/ingestion/pipeline.py` with `--mode incremental`
+- [X] T021 [US2] Persist `ingestion_status` values `new`, `unchanged`, and `updated` in artifact records
+- [X] T022 [US2] Create integration test `tests/ingestion/integration/test_incremental_ingestion.py`
+- [X] T023 [US2] Document incremental execution semantics in `specs/001-data-ingestion-pipeline/quickstart.md`
 
 ---
 
-## Phase 5: User Story 3 - Guardrail-aware Sanitization and Auditability (Priority: P3)
+## Phase 5: User Story 3 - Guardrail-aware Sanitization and Auditability (Priority: P3) ✅
 
 **Goal**: Detect sensitive and unsupported artifacts, skip or sanitize them, and record audit decisions.
 
 **Independent Test**: Add sensitive or unsupported files to a workspace, run ingestion, and verify audit records describe the decision.
 
-- [ ] T024 [US3] Identify sensitive/unsupported file patterns in `src/ingestion/guards.py`
-- [ ] T025 [US3] Implement skip/sanitize behavior in `src/ingestion/pipeline.py` for guardrail decisions
-- [ ] T026 [US3] Record guardrail audit events in `src/ingestion/storage.py`
-- [ ] T027 [US3] Create integration test `tests/ingestion/integration/test_guardrail_audit.py`
-- [ ] T028 [US3] Add a structured audit summary output for each ingestion run in `src/ingestion/pipeline.py`
+- [X] T024 [US3] Identify sensitive/unsupported file patterns in `src/ingestion/guards.py`
+- [X] T025 [US3] Implement skip/sanitize behavior in `src/ingestion/pipeline.py` for guardrail decisions
+- [X] T026 [US3] Record guardrail audit events in `src/ingestion/storage.py`
+- [X] T027 [US3] Create integration test `tests/ingestion/integration/test_guardrail_audit.py`
+- [X] T028 [US3] Add a structured audit summary output for each ingestion run in `src/ingestion/pipeline.py`
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: Polish & Cross-Cutting Concerns ✅
 
 **Purpose**: Improve usability, documentation, monitoring readiness, and developer quality.
 
-- [ ] T029 [P] Add structured ingestion run summaries and health flags in `src/ingestion/pipeline.py`
-- [ ] T030 [P] Add linting/formatting guidance and dependency install notes in `specs/001-data-ingestion-pipeline/quickstart.md`
-- [ ] T031 [P] Create a sample ingestion status API contract in `specs/001-data-ingestion-pipeline/contracts/ingestion-api.md`
-- [ ] T032 [P] Review and finalize `specs/001-data-ingestion-pipeline/data-model.md` against implemented models
-- [ ] T033 [P] Add or improve unit tests for helper logic in `tests/ingestion/unit`
+- [X] T029 [P] Add structured ingestion run summaries and health flags in `src/ingestion/pipeline.py`
+- [X] T030 [P] Add linting/formatting guidance and dependency install notes in `specs/001-data-ingestion-pipeline/quickstart.md`
+- [X] T031 [P] Create a sample ingestion status API contract in `specs/001-data-ingestion-pipeline/contracts/ingestion-api.md`
+- [X] T032 [P] Review and finalize `specs/001-data-ingestion-pipeline/data-model.md` against implemented models
+- [X] T033 [P] Add or improve unit tests for helper logic in `tests/ingestion/unit`
 
 ---
 

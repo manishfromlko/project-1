@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -87,9 +88,36 @@ class Storage:
     def get_artifact(self, artifact_id: str) -> Optional[Dict[str, Any]]:
         return self._catalog.get("artifacts", {}).get(artifact_id)
 
+    def get_artifact_hash(self, artifact_id: str) -> Optional[str]:
+        artifact = self._catalog.get("artifacts", {}).get(artifact_id)
+        return artifact.get("content_hash") if artifact else None
+
+    def get_workspace_last_ingested(self, workspace_id: str) -> Optional[datetime]:
+        workspace = self._catalog.get("workspaces", {}).get(workspace_id)
+        if workspace and workspace.get("last_ingested_at"):
+            return datetime.fromisoformat(workspace["last_ingested_at"])
+        return None
+
     def summary(self) -> Dict[str, Any]:
+        audit_summary = {}
+        for audit in self._audit:
+            decision = audit.get("decision", "unknown")
+            audit_summary[decision] = audit_summary.get(decision, 0) + 1
+
+        # Determine health
+        error_count = audit_summary.get("error", 0)
+        skipped_count = audit_summary.get("skipped", 0)
+        if error_count > 0:
+            health = "failed"
+        elif skipped_count > 0:
+            health = "degraded"
+        else:
+            health = "ok"
+
         return {
             "workspaces": len(self._catalog.get("workspaces", {})),
             "artifacts": len(self._catalog.get("artifacts", {})),
             "audit_records": len(self._audit),
+            "audit_summary": audit_summary,
+            "pipeline_health": health,
         }
