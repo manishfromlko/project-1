@@ -10,13 +10,14 @@ A generative AI-powered web application for profiling and analyzing Kubeflow wor
 - **Incremental Updates**: Efficient processing of only changed files
 - **Audit Logging**: Complete compliance tracking for ingestion decisions
 - **CLI Interface**: Command-line tool for easy pipeline execution
-- **Vector Retrieval System**: FastAPI-based API for semantic search and workspace profiling
+- **Vector Retrieval System**: Complete FastAPI-based API for semantic search and workspace profiling
 - **Workspace Profiling**: AI-powered insights into tools, topics, and collaboration patterns
 - **Hybrid Search**: Combine vector similarity with keyword matching for better results
+- **System Monitoring**: Health checks, performance metrics, and error tracking
+- **Milvus Integration**: High-performance vector storage and similarity search
 
 ### 🔮 Upcoming Features
 - **Langchain Orchestration**: Intelligent workflow analysis and chaining
-- **Milvus Vector Database**: High-performance vector storage for embeddings
 - **LiteLLM API Gateway**: Unified interface for multiple LLM providers
 - **Langfuse Observability**: Comprehensive monitoring and tracing
 - **Next.js Frontend**: Modern React-based user interface
@@ -183,16 +184,19 @@ The pipeline creates a `.ingestion/` directory in the root path containing:
 
 ### Run All Tests
 ```bash
-PYTHONPATH=src python -m pytest tests/ingestion/ -v
+PYTHONPATH=src python -m pytest tests/ -v
 ```
 
 ### Run Specific Test Categories
 ```bash
-# Unit tests
+# Ingestion unit tests
 PYTHONPATH=src python -m pytest tests/ingestion/unit/ -v
 
-# Integration tests
+# Ingestion integration tests
 PYTHONPATH=src python -m pytest tests/ingestion/integration/ -v
+
+# Retrieval API tests
+PYTHONPATH=src python -m pytest tests/test_retrieval_api.py -v
 ```
 
 ### Test Coverage
@@ -203,6 +207,9 @@ The test suite covers:
 - Full pipeline execution
 - Incremental updates
 - Audit logging
+- API endpoint functionality
+- Error handling and edge cases
+- Health checks and monitoring
 
 ## Code Quality
 
@@ -222,20 +229,32 @@ flake8 src/ tests/
 project-1/
 ├── dataset/                    # Sample workspace data for testing
 ├── src/
-│   └── ingestion/             # Ingestion pipeline modules
-│       ├── cli.py             # Command-line interface
-│       ├── pipeline.py        # Core ingestion logic
-│       ├── storage.py         # JSON-based persistence
-│       ├── guards.py          # Security guardrails
-│       ├── extractors.py      # Metadata extraction
-│       ├── models.py          # Data models
-│       └── utils.py           # Utility functions
+│   ├── ingestion/             # Ingestion pipeline modules
+│   │   ├── cli.py             # Command-line interface
+│   │   ├── pipeline.py        # Core ingestion logic
+│   │   ├── storage.py         # JSON-based persistence
+│   │   ├── guards.py          # Security guardrails
+│   │   ├── extractors.py      # Metadata extraction
+│   │   ├── models.py          # Data models
+│   │   └── utils.py           # Utility functions
+│   └── retrieval/             # Vector retrieval system
+│       ├── api.py             # FastAPI application
+│       ├── config.py          # Configuration management
+│       ├── embeddings.py      # Embedding service
+│       ├── vector_store.py    # Milvus integration
+│       ├── document_loader.py # Document loading
+│       ├── text_processor.py  # Text chunking
+│       ├── document_guard.py  # Document filtering
+│       ├── retriever.py       # Langchain retrievers
+│       └── profiling.py       # Workspace profiling
 ├── tests/
-│   └── ingestion/             # Test suite
-│       ├── unit/              # Unit tests
-│       └── integration/       # Integration tests
+│   ├── ingestion/             # Ingestion test suite
+│   │   ├── unit/              # Unit tests
+│   │   └── integration/       # Integration tests
+│   └── test_retrieval_api.py  # Retrieval API tests
 ├── specs/
-│   └── 001-data-ingestion-pipeline/  # Feature specifications
+│   ├── 001-data-ingestion-pipeline/  # Ingestion specifications
+│   └── 002-langchain-orchestration/  # Retrieval specifications
 └── README.md                  # This file
 ```
 
@@ -261,7 +280,7 @@ This project is licensed under the MIT License - see the LICENSE file in the dat
 ## Roadmap
 
 - [x] Data Ingestion Pipeline (MVP)
-- [ ] Langchain Orchestration and Vector Retrieval
+- [x] Langchain Orchestration and Vector Retrieval
 - [ ] LiteLLM API Gateway Implementation
 - [ ] Langfuse Observability Stack
 - [ ] Next.js Frontend Development
