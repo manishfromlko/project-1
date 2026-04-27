@@ -55,10 +55,10 @@
 
 **Goal**: Provide external query interfaces and finalize the retrieval system.
 
-- [ ] T027 [P3] Implement FastAPI application in `src/retrieval/api.py` with endpoints
-- [ ] T028 [P3] Create Pydantic models for API requests and responses
-- [ ] T029 [P3] Add profiling-specific query functions and insights generation
-- [ ] T030 [P3] Implement monitoring, health checks, and error handling
-- [ ] T031 [P3] Create comprehensive end-to-end tests and API documentation
-- [ ] T032 [P3] Update README and quickstart guides for retrieval system</content>
+- [X] T027 [P3] Implement FastAPI application in `src/retrieval/api.py` with endpoints
+- [X] T028 [P3] Create Pydantic models for API requests and responses
+- [X] T029 [P3] Add profiling-specific query functions and insights generation
+- [X] T030 [P3] Implement monitoring, health checks, and error handling
+- [X] T031 [P3] Create comprehensive end-to-end tests and API documentation
+- [X] T032 [P3] Update README and quickstart guides for retrieval system</content>
 <parameter name="filePath">/Users/manish/mount/projects/project-1/specs/002-langchain-orchestration/tasks.md
