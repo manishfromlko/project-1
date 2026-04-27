@@ -5,23 +5,23 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Create `src/ingestion` package with Python module files
-- [ ] T002 Create `tests/ingestion/unit` and `tests/ingestion/integration` directories
-- [ ] T003 [P] Add project dependency management and environment setup documentation in `specs/001-data-ingestion-pipeline/quickstart.md`
-- [ ] T004 [P] Define ingestion pipeline data models in `src/ingestion/models.py`
-- [ ] T005 [P] Create ingestion CLI entrypoint in `src/ingestion/cli.py`
+- [X] T001 Create `src/ingestion` package with Python module files
+- [X] T002 Create `tests/ingestion/unit` and `tests/ingestion/integration` directories
+- [X] T003 [P] Add project dependency management and environment setup documentation in `specs/001-data-ingestion-pipeline/quickstart.md`
+- [X] T004 [P] Define ingestion pipeline data models in `src/ingestion/models.py`
+- [X] T005 [P] Create ingestion CLI entrypoint in `src/ingestion/cli.py`
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T006 Implement workspace discovery and workspace catalog abstractions in `src/ingestion/pipeline.py`
-- [ ] T007 [P] Implement metadata storage helper layer in `src/ingestion/storage.py`
-- [ ] T008 [P] Implement file classification and guardrail rules in `src/ingestion/guards.py`
-- [ ] T009 [P] Implement shared ingestion utilities in `src/ingestion/utils.py`
-- [ ] T010 Create `tests/ingestion/unit/test_models.py` for workspace and artifact model validation
-- [ ] T011 Create `tests/ingestion/unit/test_guards.py` for classification and sensitive-file decisions
-- [ ] T012 Create `tests/ingestion/unit/test_storage.py` for provenance and audit storage behavior
+- [X] T006 Implement workspace discovery and workspace catalog abstractions in `src/ingestion/pipeline.py`
+- [X] T007 [P] Implement metadata storage helper layer in `src/ingestion/storage.py`
+- [X] T008 [P] Implement file classification and guardrail rules in `src/ingestion/guards.py`
+- [X] T009 [P] Implement shared ingestion utilities in `src/ingestion/utils.py`
+- [X] T010 Create `tests/ingestion/unit/test_models.py` for workspace and artifact model validation
+- [X] T011 Create `tests/ingestion/unit/test_guards.py` for classification and sensitive-file decisions
+- [X] T012 Create `tests/ingestion/unit/test_storage.py` for provenance and audit storage behavior
 
 ---
 
@@ -31,12 +31,12 @@
 
 **Independent Test**: Run the full ingestion pipeline against `dataset/` and verify workspace records, artifact records, and notebook metadata output.
 
-- [ ] T013 [US1] Implement workspace scanner in `src/ingestion/pipeline.py` to discover directories under `dataset/`
-- [ ] T014 [US1] Implement artifact ingestion flow in `src/ingestion/pipeline.py` for supported file types
-- [ ] T015 [US1] Implement notebook/script metadata extraction in `src/ingestion/extractors.py`
-- [ ] T016 [US1] Persist workspace, artifact, and notebook metadata records in `src/ingestion/storage.py`
-- [ ] T017 [US1] Create integration test `tests/ingestion/integration/test_full_ingestion.py` for sample `dataset/` workspaces
-- [ ] T018 [US1] Add validation in `src/ingestion/pipeline.py` that captures ingestion status and provenance for each workspace
+- [X] T013 [US1] Implement workspace scanner in `src/ingestion/pipeline.py` to discover directories under `dataset/`
+- [X] T014 [US1] Implement artifact ingestion flow in `src/ingestion/pipeline.py` for supported file types
+- [X] T015 [US1] Implement notebook/script metadata extraction in `src/ingestion/extractors.py`
+- [X] T016 [US1] Persist workspace, artifact, and notebook metadata records in `src/ingestion/storage.py`
+- [X] T017 [US1] Create integration test `tests/ingestion/integration/test_full_ingestion.py` for sample `dataset/` workspaces
+- [X] T018 [US1] Add validation in `src/ingestion/pipeline.py` that captures ingestion status and provenance for each workspace
 
 ---
 

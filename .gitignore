@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env*
+*.venv/
+venv/
+.venv/
+.venv
+env/
+ENV/
+venv/
+build/
+dist/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+*.log
+
+# Ingestion state
+.ingestion/
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
