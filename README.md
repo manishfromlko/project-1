@@ -164,10 +164,9 @@ This project is licensed under the MIT License - see the LICENSE file in the dat
 ## Roadmap
 
 - [x] Data Ingestion Pipeline (MVP)
-- [ ] Langchain Integration
-- [ ] Vector Database Setup
-- [ ] LLM Gateway Implementation
-- [ ] Observability Stack
-- [ ] Frontend Development
+- [ ] Langchain Orchestration and Vector Retrieval
+- [ ] LiteLLM API Gateway Implementation
+- [ ] Langfuse Observability Stack
+- [ ] Next.js Frontend Development
 - [ ] Production Deployment</content>
 <parameter name="filePath">/Users/manish/mount/projects/project-1/README.md
