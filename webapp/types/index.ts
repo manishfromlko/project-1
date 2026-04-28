@@ -22,6 +22,7 @@ export interface WorkspaceProfile {
   last_updated?: string
   file_types: Record<string, number>
   code_metrics: CodeMetrics
+  recent_artifacts?: ArtifactMetadata[]
 }
 
 export interface ToolUsage {
