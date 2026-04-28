@@ -86,15 +86,15 @@
 
 ### Implementation for User Story 2
 
-- [ ] T030 [P] [US2] Create SearchResult and SearchQuery interface types in webapp/types/search.ts
-- [ ] T031 [P] [US2] Create API hooks for search endpoint in webapp/lib/api/search.ts
-- [ ] T032 [P] [US2] Implement SearchBar component in webapp/components/search/SearchBar.tsx
-- [ ] T033 [P] [US2] Create SearchResults component in webapp/components/search/SearchResults.tsx
-- [ ] T034 [P] [US2] Implement SearchFilters component in webapp/components/search/SearchFilters.tsx
-- [ ] T035 [US2] Create search page in webapp/app/search/page.tsx
-- [ ] T036 [US2] Add search functionality to dashboard header
-- [ ] T037 [US2] Implement result highlighting and preview
-- [ ] T038 [US2] Add pagination for search results
+- [X] T030 [P] [US2] Create SearchResult and SearchQuery interface types in webapp/types/search.ts
+- [X] T031 [P] [US2] Create API hooks for search endpoint in webapp/lib/api/search.ts
+- [X] T032 [P] [US2] Implement SearchBar component in webapp/components/search/SearchBar.tsx
+- [X] T033 [P] [US2] Create SearchResults component in webapp/components/search/SearchResults.tsx
+- [X] T034 [P] [US2] Implement SearchFilters component in webapp/components/search/SearchFilters.tsx
+- [X] T035 [US2] Create search page in webapp/app/search/page.tsx
+- [X] T036 [US2] Add search functionality to dashboard header
+- [X] T037 [US2] Implement result highlighting and preview
+- [X] T038 [US2] Add pagination for search results
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
