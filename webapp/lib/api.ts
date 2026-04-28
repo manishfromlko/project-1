@@ -71,7 +71,7 @@ class ApiClient {
     page_size?: number
     search?: string
     status?: string
-  }) {
+  }): Promise<{ data: any[]; pagination: any; metadata?: any }> {
     const searchParams = new URLSearchParams()
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -87,23 +87,23 @@ class ApiClient {
     return this.request(endpoint)
   }
 
-  async getWorkspace(id: string) {
+  async getWorkspace(id: string): Promise<any> {
     return this.request(`/api/workspaces/${id}`)
   }
 
-  async getWorkspaceProfile(id: string) {
+  async getWorkspaceProfile(id: string): Promise<any> {
     return this.request(`/api/workspaces/${id}/profile`)
   }
 
   // Search endpoints
-  async search(query: any) {
+  async search(query: any): Promise<{ data: any[]; metadata?: any }> {
     return this.request('/api/search', {
       method: 'POST',
       body: JSON.stringify(query),
     })
   }
 
-  async getSearchSuggestions(q: string, workspace_id?: string) {
+  async getSearchSuggestions(q: string, workspace_id?: string): Promise<string[]> {
     const params = new URLSearchParams({ q })
     if (workspace_id) {
       params.set('workspace_id', workspace_id)
@@ -113,15 +113,15 @@ class ApiClient {
   }
 
   // System endpoints
-  async getHealth() {
+  async getHealth(): Promise<{ status: string; timestamp: string; version: string; services: any[] }> {
     return this.request('/api/health')
   }
 
-  async getMetrics() {
+  async getMetrics(): Promise<any> {
     return this.request('/api/metrics')
   }
 
-  async syncData(options?: { force_full?: boolean }) {
+  async syncData(options?: { force_full?: boolean }): Promise<any> {
     return this.request('/api/admin/sync', {
       method: 'POST',
       body: JSON.stringify(options || {}),

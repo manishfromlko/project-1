@@ -137,7 +137,7 @@ export default function DashboardPage() {
             </div>
           ) : workspaces?.data?.length ? (
             <div className="space-y-4">
-              {workspaces.data.slice(0, 5).map((workspace) => (
+              {workspaces.data.slice(0, 5).map((workspace: any) => (
                 <div
                   key={workspace.id}
                   className="flex items-center justify-between p-4 border rounded-lg"

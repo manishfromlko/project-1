@@ -99,8 +99,8 @@ export function useWorkspaceStats() {
 
   return {
     totalWorkspaces: workspaces?.data?.length || 0,
-    activeWorkspaces: workspaces?.data?.filter(w => w.status === 'active').length || 0,
-    totalArtifacts: workspaces?.data?.reduce((sum, w) => sum + w.artifact_count, 0) || 0,
+    activeWorkspaces: workspaces?.data?.filter((w: any) => w.status === 'active').length || 0,
+    totalArtifacts: workspaces?.data?.reduce((sum: number, w: any) => sum + w.artifact_count, 0) || 0,
     isLoading: !workspaces,
   }
 }
