@@ -121,16 +121,21 @@ python -m src.retrieval.indexer \
 
 ### Step 6 — Start the retrieval API
 
-Choose a free port. If port 8000 is already in use (e.g., by Docker or another service),
-use a different port and note it for Step 8.
+`INGESTION_CATALOG_PATH` is **required**. The server will refuse to load workspace/profile
+data without it. Run from the project root with `python -m uvicorn` (not bare `uvicorn`).
 
 ```bash
 INGESTION_CATALOG_PATH=dataset/.ingestion/ingestion_catalog.json \
   python -m uvicorn src.retrieval.api:app --host 0.0.0.0 --port 8000
 ```
 
-> **Important:** Always use `python -m uvicorn` (not bare `uvicorn`) to use the active venv.
-> Run from the project root, not from inside `src/retrieval/`.
+If port 8000 is already in use (e.g. Docker is running something there), use another port
+and note it for Step 9:
+
+```bash
+INGESTION_CATALOG_PATH=dataset/.ingestion/ingestion_catalog.json \
+  python -m uvicorn src.retrieval.api:app --host 0.0.0.0 --port 8002
+```
 
 Verify the API is healthy:
 ```bash

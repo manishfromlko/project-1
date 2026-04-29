@@ -123,13 +123,23 @@ async def startup_event():
             vector_store.collection.load()
             vector_store._collection_loaded = True
 
-        # Pre-warm the catalog cache so workspace/profile endpoints are instant
-        profiler.loader.load_catalog()
-
         # Warm up the embedding model — first encode() triggers JIT compilation;
         # doing it here means the first user-facing search is not penalised.
         logger.info("Warming up embedding model...")
         embedding_service.generate_embedding("warmup")
+
+        # Pre-warm the catalog cache so workspace/profile endpoints are instant.
+        # Non-fatal: if the catalog path is wrong the server still starts and
+        # search (/query) continues to work; only workspace/profile endpoints 503.
+        try:
+            profiler.loader.load_catalog()
+        except FileNotFoundError:
+            logger.warning(
+                f"Catalog not found at '{config.ingestion_catalog_path}'. "
+                "Workspace and profile endpoints will return 503 until the catalog "
+                "is available. Set INGESTION_CATALOG_PATH to fix this."
+            )
+
         logger.info("API services initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize services: {e}")
