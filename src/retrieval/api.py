@@ -440,7 +440,7 @@ async def list_user_profiles():
         data = []
         for p in profiles:
             data.append({
-                "id": p.get("id", ""),
+                "id": str(p.get("id", "")),
                 "user_id": p.get("user_id", ""),
                 "user_profile": p.get("user_profile", ""),
                 "tags": [t.strip() for t in p.get("tags", "").split(",") if t.strip()],
@@ -462,7 +462,7 @@ async def get_user_profile(user_id: str):
             raise HTTPException(status_code=404, detail=f"Profile for '{user_id}' not found")
         return {
             "data": {
-                "id": p.get("id", ""),
+                "id": str(p.get("id", "")),
                 "user_id": p.get("user_id", ""),
                 "user_profile": p.get("user_profile", ""),
                 "tags": [t.strip() for t in p.get("tags", "").split(",") if t.strip()],
@@ -538,7 +538,7 @@ async def get_artifact_summary(
             raise HTTPException(status_code=404, detail="Artifact summary not found")
         return {
             "data": {
-                "id": summary.get("id", ""),
+                "id": str(summary.get("id", "")),
                 "user_id": summary.get("user_id", ""),
                 "artifact_id": summary.get("artifact_id", ""),
                 "artifact_summary": summary.get("artifact_summary", ""),
@@ -562,7 +562,7 @@ async def list_artifact_summaries(workspace_id: str):
         data = []
         for s in summaries:
             data.append({
-                "id": s.get("id", ""),
+                "id": str(s.get("id", "")),
                 "user_id": s.get("user_id", ""),
                 "artifact_id": s.get("artifact_id", ""),
                 "artifact_summary": s.get("artifact_summary", ""),

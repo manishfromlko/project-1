@@ -125,7 +125,6 @@ def generate_profiles_from_summaries(
             tags = ",".join(str(t).strip() for t in tags_raw if t)[:1000]
 
             profiles.append({
-                "id": f"profile:{user_id}",
                 "user_id": user_id,
                 "user_profile": profile_text,
                 "tags": tags,
