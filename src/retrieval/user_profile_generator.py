@@ -1,148 +1,254 @@
-"""Generate user profiles from the ingestion catalog."""
+"""Generate user profiles via OpenAI chat completion from real workspace content."""
 
 import json
 import logging
-import re
-from collections import Counter
+import os
+from pathlib import Path
 from typing import Dict, List, Optional
+
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
-# Tools we recognise and surface as tags; anything else is filtered out.
-KNOWN_TOOLS = {
-    "pyspark", "spark", "pandas", "numpy", "sklearn", "matplotlib",
-    "seaborn", "tensorflow", "keras", "pytorch", "torch", "langchain",
-    "openai", "kafka", "airflow", "mlflow", "xgboost", "lightgbm",
-    "catboost", "scipy", "statsmodels", "plotly", "bokeh", "dask",
-    "ray", "huggingface", "transformers", "fastapi", "flask",
-    "sqlalchemy", "redis", "elasticsearch", "nltk", "spacy",
-}
+PROMPT_PATH = Path(__file__).parent.parent.parent / "prompts" / "user_profile_prompt.txt"
 
-TOOL_ALIASES = {
-    "scikit-learn": "sklearn",
-    "sk-learn": "sklearn",
-    "torch": "pytorch",
-    "tf": "tensorflow",
-}
+# Per-artifact content budget and total context cap
+MAX_CHARS_PER_NOTEBOOK = 500
+MAX_CHARS_PER_SCRIPT = 400
+MAX_CONTEXT_CHARS = 24_000
 
-# Folder/path keywords → human-readable topic label
-TOPIC_PATTERNS = [
-    (r"recommender|recommendation", "Recommender Systems"),
-    (r"time[_\s\-]?series|timeseries", "Time Series"),
-    (r"deep[_\s]?learning|neural", "Deep Learning"),
-    (r"natural[_\s]?language|nlp|text[_\s]?classi", "NLP"),
-    (r"machine[_\s]?learning", "Machine Learning"),
-    (r"stream|kafka|real[_\s]?time", "Stream Processing"),
-    (r"data[_\s]?engineer|pipeline|etl", "Data Engineering"),
-    (r"visual|seaborn|matplotlib|plot|chart", "Data Visualisation"),
-    (r"predict|forecast|future[_\s]?value", "Forecasting"),
-    (r"classif", "Classification"),
-    (r"regression", "Regression"),
-    (r"cluster", "Clustering"),
-    (r"finance|stock|market|investor|fund", "Financial Analysis"),
-    (r"getting|knowing|eda|exploratory", "Exploratory Analysis"),
-    (r"sql|database|query", "SQL & Databases"),
-]
+# Data-access patterns to surface for the LLM
+DATA_ACCESS_KEYWORDS = (
+    "spark.read", "spark.sql", "spark.table", "sc.textFile",
+    "hdfs://", "s3://", "s3a://", "s3n://",
+    "FROM ", "JOIN ", "SELECT ", ".table(", ".parquet(",
+    ".csv(", ".json(", ".orc(", ".delta(", "kafka", "topic",
+    "sqlContext", "read_csv", "read_parquet", "read_table",
+    "createOrReplaceTempView", "registerTempTable",
+)
 
 
-def _normalize_tool(raw: str) -> Optional[str]:
-    t = raw.lower().strip()
-    t = TOOL_ALIASES.get(t, t)
-    return t if t in KNOWN_TOOLS else None
+# ---------------------------------------------------------------------------
+# Content extraction helpers
+# ---------------------------------------------------------------------------
 
+def _extract_notebook_context(path: str) -> str:
+    """Extract markdown headers + import lines + data-access lines from a notebook."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            nb = json.load(f)
+    except Exception:
+        return ""
 
-def _infer_topics(paths: List[str]) -> List[str]:
-    joined = " ".join(paths).lower()
-    seen: set = set()
-    topics: List[str] = []
-    for pattern, label in TOPIC_PATTERNS:
-        if label not in seen and re.search(pattern, joined):
-            topics.append(label)
-            seen.add(label)
-    return topics[:4]
+    headers: List[str] = []
+    imports: List[str] = []
+    data_lines: List[str] = []
 
+    for cell in nb.get("cells", []):
+        cell_type = cell.get("cell_type", "")
+        source = "".join(cell.get("source", []))
 
-def _build_profile_text(
-    user_id: str,
-    topics: List[str],
-    top_tools: List[str],
-    nb_count: int,
-    script_count: int,
-    text_count: int,
-) -> str:
-    topic_str = ", ".join(topics) if topics else "data analysis"
+        if cell_type == "markdown":
+            for line in source.splitlines():
+                if line.startswith("#"):
+                    headers.append(line.strip())
+                    if len(headers) >= 4:
+                        break
 
-    artifact_parts = []
-    if nb_count:
-        artifact_parts.append(f"{nb_count} notebook{'s' if nb_count != 1 else ''}")
-    if script_count:
-        artifact_parts.append(f"{script_count} script{'s' if script_count != 1 else ''}")
-    if text_count:
-        artifact_parts.append(f"{text_count} text file{'s' if text_count != 1 else ''}")
-    artifact_str = ", ".join(artifact_parts) if artifact_parts else "various files"
+        elif cell_type == "code":
+            for line in source.splitlines():
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                if stripped.startswith(("import ", "from ")):
+                    imports.append(stripped)
+                elif any(kw in line for kw in DATA_ACCESS_KEYWORDS):
+                    data_lines.append(stripped)
 
-    tool_str = ", ".join(top_tools[:5]) if top_tools else "general Python"
+    # Deduplicate while preserving order
+    def dedup(lst: List[str]) -> List[str]:
+        seen: set = set()
+        out: List[str] = []
+        for x in lst:
+            if x not in seen:
+                seen.add(x)
+                out.append(x)
+        return out
 
-    text = (
-        f"{user_id} works on {topic_str}. "
-        f"Workspace includes {artifact_str}. "
-        f"Primary tools: {tool_str}."
+    parts = (
+        dedup(headers)[:4]
+        + dedup(imports)[:8]
+        + dedup(data_lines)[:10]
     )
-    return text[:500]
+    return "\n".join(parts)
 
 
-def generate_profiles(catalog_path: str) -> List[Dict]:
+def _extract_script_context(path: str) -> str:
+    """Extract imports + data-access lines from a script."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+    except Exception:
+        return ""
+
+    imports: List[str] = []
+    data_lines: List[str] = []
+    header = [l.rstrip() for l in lines[:15]]  # file-level comments / shebang
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith(("import ", "from ")):
+            imports.append(stripped)
+        elif any(kw in line for kw in DATA_ACCESS_KEYWORDS):
+            data_lines.append(stripped)
+
+    def dedup(lst: List[str]) -> List[str]:
+        seen: set = set()
+        out: List[str] = []
+        for x in lst:
+            if x not in seen:
+                seen.add(x)
+                out.append(x)
+        return out
+
+    parts = header + dedup(imports)[:8] + dedup(data_lines)[:10]
+    return "\n".join(parts)
+
+
+def _artifact_snippet(artifact: Dict) -> str:
+    """Return a labelled text snippet for one artifact, or '' if unreadable."""
+    source_path = artifact.get("capture_source", {}).get("source_path", "")
+    file_type = artifact.get("file_type", "")
+    file_name = artifact.get("file_name", "")
+
+    if not source_path or not os.path.exists(source_path):
+        return ""
+
+    if file_type == "notebook":
+        content = _extract_notebook_context(source_path)
+        budget = MAX_CHARS_PER_NOTEBOOK
+    else:
+        content = _extract_script_context(source_path)
+        budget = MAX_CHARS_PER_SCRIPT
+
+    content = content.strip()
+    if not content:
+        return ""
+
+    return f"### {file_type.upper()}: {file_name}\n{content[:budget]}\n\n"
+
+
+def _build_context(artifacts: List[Dict]) -> str:
+    """Assemble context string from all artifacts, capped at MAX_CONTEXT_CHARS."""
+    parts: List[str] = []
+    total = 0
+    for art in artifacts:
+        snippet = _artifact_snippet(art)
+        if snippet:
+            if total + len(snippet) > MAX_CONTEXT_CHARS:
+                break
+            parts.append(snippet)
+            total += len(snippet)
+    return "".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Profile generation
+# ---------------------------------------------------------------------------
+
+def _load_prompt_template() -> str:
+    with open(PROMPT_PATH, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def _call_llm(client: OpenAI, model: str, prompt: str) -> Optional[Dict]:
+    """Call OpenAI chat completion and return parsed JSON, or None on failure."""
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a precise technical analyst. "
+                    "Always respond with valid JSON only — no markdown, no explanation."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.2,
+        max_tokens=500,
+        response_format={"type": "json_object"},
+    )
+    raw = response.choices[0].message.content.strip()
+    return json.loads(raw)
+
+
+def generate_profiles(
+    catalog_path: str,
+    openai_api_key: str,
+    model: str = "gpt-4o-mini",
+) -> List[Dict]:
     """
-    Read catalog and return a profile dict for each workspace.
+    Read catalog, call the LLM once per workspace, and return profile dicts.
 
-    Each dict has keys: id, user_id, user_profile, tags.
-    The caller is responsible for adding the 'vector' key before indexing.
+    Each dict has: id, user_id, user_profile, tech_tags, data_tags.
+    The caller adds 'vector' before indexing into Milvus.
     """
     with open(catalog_path) as f:
         catalog = json.load(f)
 
-    artifacts = catalog.get("artifacts", {})
-
-    ws_data: Dict[str, Dict] = {}
-    for art in artifacts.values():
+    artifacts_by_ws: Dict[str, List[Dict]] = {}
+    for art in catalog.get("artifacts", {}).values():
         ws = art.get("workspace_id", "")
-        if not ws:
-            continue
-        if ws not in ws_data:
-            ws_data[ws] = {
-                "tools": Counter(),
-                "paths": [],
-                "counts": {"notebook": 0, "script": 0, "text": 0},
-            }
-        ft = art.get("file_type", "")
-        if ft in ws_data[ws]["counts"]:
-            ws_data[ws]["counts"][ft] += 1
-        ws_data[ws]["paths"].append(art.get("relative_path", ""))
-        for raw_tool in art.get("classification", {}).get("metadata", {}).get("tools", []):
-            norm = _normalize_tool(raw_tool)
-            if norm:
-                ws_data[ws]["tools"][norm] += 1
+        if ws:
+            artifacts_by_ws.setdefault(ws, []).append(art)
+
+    prompt_template = _load_prompt_template()
+    client = OpenAI(api_key=openai_api_key)
 
     profiles: List[Dict] = []
-    for user_id, data in ws_data.items():
-        top_tools = [t for t, _ in data["tools"].most_common(10)]
-        topics = _infer_topics(data["paths"])
-        c = data["counts"]
+    for user_id, artifacts in artifacts_by_ws.items():
+        logger.info(f"Processing {user_id} ({len(artifacts)} artifacts)...")
 
-        profile_text = _build_profile_text(
-            user_id, topics, top_tools,
-            c.get("notebook", 0), c.get("script", 0), c.get("text", 0),
-        )
-        tags = ",".join(top_tools)
+        context = _build_context(artifacts)
+        if not context.strip():
+            logger.warning(f"  No readable content for {user_id} — skipping")
+            continue
 
-        profiles.append({
-            "id": f"profile:{user_id}",
-            "user_id": user_id,
-            "user_profile": profile_text,
-            "tags": tags,
-        })
-        logger.info(
-            f"  {user_id}: {len(profile_text)} chars, tools=[{tags[:60]}...]"
+        logger.info(f"  Context: {len(context):,} chars → calling {model}")
+        prompt = (
+            prompt_template
+            .replace("{user_id}", user_id)
+            .replace("{content}", context)
         )
+
+        try:
+            parsed = _call_llm(client, model, prompt)
+
+            profile_text = str(parsed.get("profile", "")).strip()[:500]
+            tech_tags_raw = parsed.get("tech_tags", [])
+            data_tags_raw = parsed.get("data_tags", [])
+
+            # Sanitise: ensure lists of strings
+            tech_tags = ",".join(str(t).strip() for t in tech_tags_raw if t)[:500]
+            data_tags = ",".join(str(t).strip() for t in data_tags_raw if t)[:500]
+
+            profiles.append({
+                "id": f"profile:{user_id}",
+                "user_id": user_id,
+                "user_profile": profile_text,
+                "tech_tags": tech_tags,
+                "data_tags": data_tags,
+            })
+
+            logger.info(f"  profile ({len(profile_text)} chars): {profile_text[:80]}...")
+            logger.info(f"  tech_tags: {tech_tags}")
+            logger.info(f"  data_tags: {data_tags}")
+
+        except Exception as e:
+            logger.error(f"  LLM call failed for {user_id}: {e}")
+            continue
 
     return profiles
