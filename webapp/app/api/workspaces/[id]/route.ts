@@ -4,9 +4,9 @@ const PYTHON_API = process.env.PYTHON_API_URL || 'http://localhost:8000'
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params
+  const { id } = await params
   try {
     const res = await fetch(`${PYTHON_API}/workspaces/${encodeURIComponent(id)}`, {
       cache: 'no-store',
