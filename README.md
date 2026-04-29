@@ -180,6 +180,58 @@ The pipeline creates a `.ingestion/` directory in the root path containing:
 - `ingestion_catalog.json`: Workspace and artifact metadata
 - `ingestion_audit.json`: Audit log of ingestion decisions
 
+## Webapp Frontend
+
+The `webapp/` directory contains the Next.js UI for browsing workspaces, searching artifacts, and viewing workspace analytics.
+
+### Prerequisites
+- Node.js 18+ or compatible LTS version
+- npm
+- Backend API server running on `http://localhost:8000`
+
+### Install frontend dependencies
+```bash
+cd webapp
+npm install
+```
+
+### Run the development frontend
+```bash
+cd webapp
+npm run dev
+```
+
+Then open http://localhost:3000 in your browser.
+
+### Build for production
+```bash
+cd webapp
+npm run build
+npm run start
+```
+
+### Environment variables
+If the API server is not running on `http://localhost:8000`, set the frontend base URL before starting:
+```bash
+export NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### Full local startup sequence
+1. Start the Python backend API:
+   ```bash
+   cd src/retrieval
+   python -m uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+   ```
+2. Run the ingestion pipeline to populate the catalog (if needed):
+   ```bash
+   PYTHONPATH=src python -m src.ingestion.cli --root dataset --mode full
+   ```
+3. Start the webapp frontend:
+   ```bash
+   cd webapp
+   npm run dev
+   ```
+
 ## Testing
 
 ### Run All Tests
