@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useSearchParams } from 'next/navigation'
-import { useWorkspace, useWorkspaceProfile, useArtifactSummary } from '@/hooks/use-api'
+import { useWorkspace, useWorkspaceProfile, useArtifactSummary, useWorkspaceArtifactSummaries } from '@/hooks/use-api'
 import { ProfileCard } from '@/components/workspace/ProfileCard'
 import { ToolChart } from '@/components/workspace/ToolChart'
 import { ArtifactList } from '@/components/workspace/ArtifactList'
@@ -28,9 +28,16 @@ export default function WorkspaceDetailPage() {
     isLoading: artifactSummaryLoading,
     error: artifactSummaryError,
   } = useArtifactSummary(workspaceId, selectedArtifactId)
+  const {
+    data: workspaceSummariesData,
+    isLoading: workspaceSummariesLoading,
+  } = useWorkspaceArtifactSummaries(workspaceId)
 
   const workspace = workspaceData?.data
   const profile = profileData?.data
+  const summariesByArtifactId = Object.fromEntries(
+    (workspaceSummariesData?.data || []).map((summary) => [summary.artifact_id, summary])
+  )
 
   if (workspaceError) {
     return (
@@ -134,6 +141,8 @@ export default function WorkspaceDetailPage() {
             workspaceId={workspaceId}
             artifacts={profile?.recent_artifacts || []}
             isLoading={profileLoading}
+            summariesByArtifactId={summariesByArtifactId}
+            summariesLoading={workspaceSummariesLoading}
           />
         </div>
       </div>

@@ -1,17 +1,19 @@
 'use client'
 
-import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FileText, FolderOpen, ExternalLink, Calendar } from 'lucide-react'
 import type { ArtifactMetadata } from '@/types'
+import type { ArtifactSummary } from '@/lib/api'
 
 interface ArtifactListProps {
   artifacts?: ArtifactMetadata[]
   isLoading?: boolean
   workspaceId: string
+  summariesByArtifactId?: Record<string, ArtifactSummary>
+  summariesLoading?: boolean
 }
 
 function getFileIcon(fileType?: string) {
@@ -36,7 +38,13 @@ function getLanguageColor(language?: string) {
   return colors[language?.toLowerCase() || ''] || 'bg-gray-100 text-gray-800'
 }
 
-export function ArtifactList({ artifacts = [], isLoading = false, workspaceId }: ArtifactListProps) {
+export function ArtifactList({
+  artifacts = [],
+  isLoading = false,
+  workspaceId,
+  summariesByArtifactId = {},
+  summariesLoading = false,
+}: ArtifactListProps) {
   if (isLoading) {
     return (
       <Card>
@@ -80,11 +88,11 @@ export function ArtifactList({ artifacts = [], isLoading = false, workspaceId }:
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {artifacts.slice(0, 10).map((artifact) => (
-            (() => {
-              const artifactId = artifact.artifact_id || `${workspaceId}:${artifact.file_path}`
-              const href = `/workspaces/${workspaceId}?file=${encodeURIComponent(artifact.file_path)}&artifact_id=${encodeURIComponent(artifactId)}`
-              return (
+          {artifacts.slice(0, 10).map((artifact) => {
+            const artifactId = artifact.artifact_id || `${workspaceId}:${artifact.file_path}`
+            const href = `/workspaces/${workspaceId}?file=${encodeURIComponent(artifact.file_path)}&artifact_id=${encodeURIComponent(artifactId)}`
+            const artifactSummary = summariesByArtifactId[artifactId]
+            return (
             <div
               key={`${artifact.workspace_id}-${artifact.file_path}`}
               className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -110,6 +118,11 @@ export function ArtifactList({ artifacts = [], isLoading = false, workspaceId }:
                       {new Date(artifact.modified_at).toLocaleDateString()}
                     </span>
                   </div>
+                  <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap line-clamp-3">
+                    {summariesLoading
+                      ? 'Loading artifact summary...'
+                      : artifactSummary?.artifact_summary || 'Summary not available'}
+                  </p>
                 </div>
               </div>
               <Button
@@ -123,9 +136,8 @@ export function ArtifactList({ artifacts = [], isLoading = false, workspaceId }:
                 </a>
               </Button>
             </div>
-              )
-            })()
-          ))}
+            )
+          })}
         </div>
       </CardContent>
     </Card>
