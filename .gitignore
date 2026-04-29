@@ -50,4 +50,4 @@ coverage/
 .vercel
 
 # dataset
-.dataset/ravi.verma
+/dataset/ravi.verma/
