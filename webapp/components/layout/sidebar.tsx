@@ -16,46 +16,25 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  MessageSquare,
 } from 'lucide-react'
 
 const navigation = [
-  {
-    name: 'Dashboard',
-    href: '/',
-    icon: Home,
-  },
-  {
-    name: 'Search',
-    href: '/search',
-    icon: Search,
-  },
-  {
-    name: 'User Profiles',
-    href: '/user-profiles',
-    icon: Users,
-  },
-  {
-    name: 'Workspaces',
-    href: '/workspaces',
-    icon: FolderOpen,
-  },
-  {
-    name: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3,
-  },
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: Settings,
-  },
+  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Search', href: '/search', icon: Search },
+  { name: 'User Profiles', href: '/user-profiles', icon: Users },
+  { name: 'Workspaces', href: '/workspaces', icon: FolderOpen },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 interface SidebarProps {
   className?: string
+  onChatToggle?: () => void
+  chatOpen?: boolean
 }
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, onChatToggle, chatOpen }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
 
@@ -69,9 +48,7 @@ export function Sidebar({ className }: SidebarProps) {
     >
       {/* Header */}
       <div className="flex h-16 items-center justify-between px-4">
-        {!collapsed && (
-          <h2 className="text-lg font-semibold">Workspace</h2>
-        )}
+        {!collapsed && <h2 className="text-lg font-semibold">Workspace</h2>}
         <Button
           variant="ghost"
           size="sm"
@@ -112,11 +89,22 @@ export function Sidebar({ className }: SidebarProps) {
         </nav>
       </ScrollArea>
 
-      {/* Footer */}
-      <div className="p-4">
-        <div className="text-xs text-muted-foreground">
-          {!collapsed && 'v1.0.0'}
-        </div>
+      <Separator />
+
+      {/* Chat toggle at bottom of sidebar */}
+      <div className="p-3">
+        <Button
+          variant={chatOpen ? 'secondary' : 'ghost'}
+          className={cn('w-full justify-start', collapsed ? 'px-2' : 'px-3')}
+          onClick={onChatToggle}
+          title="Toggle AI Assistant"
+        >
+          <MessageSquare className={cn('h-4 w-4', !collapsed && 'mr-3')} />
+          {!collapsed && <span>AI Assistant</span>}
+        </Button>
+        {!collapsed && (
+          <p className="mt-2 text-[10px] text-muted-foreground px-1">v1.0.0</p>
+        )}
       </div>
     </div>
   )

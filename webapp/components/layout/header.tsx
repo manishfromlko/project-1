@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { Bell, User } from 'lucide-react'
+import { Bell, MessageSquare, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -14,8 +13,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { SearchBar } from '@/components/search/SearchBar'
+import { cn } from '@/lib/utils'
 
-export function Header() {
+interface HeaderProps {
+  onChatToggle?: () => void
+  chatOpen?: boolean
+}
+
+export function Header({ onChatToggle, chatOpen }: HeaderProps) {
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-6 gap-4">
       {/* Search Bar */}
@@ -24,7 +29,19 @@ export function Header() {
       </div>
 
       {/* Right side actions */}
-      <div className="flex items-center space-x-4 ml-auto">
+      <div className="flex items-center space-x-2 ml-auto">
+        {/* AI Chat toggle */}
+        <Button
+          variant={chatOpen ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={onChatToggle}
+          title="Toggle AI Assistant"
+          className={cn('gap-2', chatOpen && 'bg-secondary')}
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span className="hidden sm:inline text-sm">Assistant</span>
+        </Button>
+
         {/* Notifications */}
         <Button variant="ghost" size="sm" className="relative">
           <Bell className="h-4 w-4" />
