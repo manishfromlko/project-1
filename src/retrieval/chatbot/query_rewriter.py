@@ -5,17 +5,9 @@ import os
 
 from openai import OpenAI
 
+from .prompt_loader import load_prompt
+
 logger = logging.getLogger(__name__)
-
-_SYSTEM_PROMPT = """\
-Rewrite the user's question into a concise, keyword-rich search query optimised for semantic vector search.
-
-Rules:
-- Remove filler words ("can you", "please", "I want to")
-- Expand abbreviations if obvious
-- Add synonyms in parentheses if helpful
-- Keep under 30 words
-- Return ONLY the rewritten query, no explanation"""
 
 
 class QueryRewriter:
@@ -25,6 +17,7 @@ class QueryRewriter:
             raise RuntimeError("OPENAI_API_KEY not set")
         self.client = OpenAI(api_key=api_key)
         self.model = model
+        self._system_prompt = load_prompt("chatbot/query_rewriter/system.txt")
 
     def rewrite(self, query: str) -> str:
         """Return a semantically enriched query string."""
@@ -32,7 +25,7 @@ class QueryRewriter:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "system", "content": self._system_prompt},
                     {"role": "user", "content": query},
                 ],
                 temperature=0.0,

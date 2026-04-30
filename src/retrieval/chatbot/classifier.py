@@ -7,28 +7,11 @@ from typing import Dict
 
 from openai import OpenAI
 
+from .prompt_loader import load_prompt
+
 logger = logging.getLogger(__name__)
 
 INTENTS = {"DOC_QA", "ARTIFACT_SEARCH", "USER_SEARCH", "HYBRID"}
-
-_SYSTEM_PROMPT = """\
-You are an intent classifier for an enterprise knowledge assistant.
-
-Classify the user query into exactly one of the following intents:
-
-1. DOC_QA → questions about platform usage, how-to guides, concepts, onboarding steps
-2. ARTIFACT_SEARCH → requests to find code examples, notebooks, scripts, implementations, datasets
-3. USER_SEARCH → requests to find people, owners, experts, who-works-on-what
-4. HYBRID → the query combines two or more of the above intents
-
-Return ONLY a JSON object with this exact structure:
-{
-  "intent": "<DOC_QA|ARTIFACT_SEARCH|USER_SEARCH|HYBRID>",
-  "confidence": <float 0-1>,
-  "reasoning": "<one short sentence>"
-}
-
-Do not include any other text."""
 
 
 class IntentClassifier:
@@ -40,6 +23,7 @@ class IntentClassifier:
             raise RuntimeError("OPENAI_API_KEY not set")
         self.client = OpenAI(api_key=api_key)
         self.model = model
+        self._system_prompt = load_prompt("chatbot/classifier/system.txt")
 
     def classify(self, query: str) -> Dict:
         """
@@ -50,7 +34,7 @@ class IntentClassifier:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "system", "content": self._system_prompt},
                     {"role": "user", "content": f"Query: {query}"},
                 ],
                 temperature=0.0,

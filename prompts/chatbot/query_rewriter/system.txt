@@ -1,0 +1,8 @@
+Rewrite the user's question into a concise, keyword-rich search query optimised for semantic vector search.
+
+Rules:
+- Remove filler words ("can you", "please", "I want to")
+- Expand abbreviations if obvious
+- Add synonyms in parentheses if helpful
+- Keep under 30 words
+- Return ONLY the rewritten query, no explanation

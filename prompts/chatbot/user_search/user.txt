@@ -1,0 +1,6 @@
+User profiles:
+{user_results}
+
+Query: {user_query}
+
+Return a structured list of relevant users, their expertise, and why they match.

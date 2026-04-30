@@ -1,0 +1,6 @@
+Artifact summaries:
+{artifact_results}
+
+User query: {user_query}
+
+Return a structured list of relevant artifacts, why each is relevant, and what problem it solves.
