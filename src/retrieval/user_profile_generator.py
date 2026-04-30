@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from openai import OpenAI
+from ..observability import make_llm_client
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +206,7 @@ def generate_profiles(
             artifacts_by_ws.setdefault(ws, []).append(art)
 
     prompt_template = _load_prompt_template()
-    client = OpenAI(api_key=openai_api_key)
+    client = make_llm_client()
 
     profiles: List[Dict] = []
     for user_id, artifacts in artifacts_by_ws.items():
