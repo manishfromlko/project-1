@@ -1,0 +1,12 @@
+Documentation chunks:
+{doc_chunks}
+
+Artifact summaries:
+{artifact_results}
+
+User profiles:
+{user_results}
+
+Query: {user_query}
+
+Provide a comprehensive response with direct answer, supporting artifacts, and relevant users.

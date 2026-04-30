@@ -20,6 +20,7 @@ from .profile_indexer import run_profile_indexing
 from .profile_from_summaries_indexer import run_profile_indexing_from_summaries
 from .artifact_summary_store import ArtifactSummaryStore
 from .artifact_summary_indexer import run_artifact_summary_indexing
+from .chatbot import ChatEngine, DocumentChunkStore, ingest_platform_docs
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,8 @@ query_processor: Optional[QueryProcessor] = None
 profiler: Optional[WorkspaceProfiler] = None
 user_profile_store: Optional[UserProfileStore] = None
 artifact_summary_store: Optional[ArtifactSummaryStore] = None
+doc_chunk_store: Optional[DocumentChunkStore] = None
+chat_engine: Optional[ChatEngine] = None
 
 # ---------------------------------------------------------------------------
 # App factory
@@ -116,7 +119,7 @@ app = create_app()
 
 @app.on_event("startup")
 async def startup_event():
-    global config, vector_store, embedding_service, query_processor, profiler, user_profile_store, artifact_summary_store
+    global config, vector_store, embedding_service, query_processor, profiler, user_profile_store, artifact_summary_store, doc_chunk_store, chat_engine
     try:
         config = RetrievalConfig.from_env()
         vector_store = VectorStore(config)
@@ -147,6 +150,26 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"Artifact summary store not ready: {e}")
             artifact_summary_store = None
+
+        # Load platform_docs collection and initialise chat engine (non-fatal)
+        try:
+            doc_chunk_store = DocumentChunkStore(config)
+            doc_chunk_store.create_collection(drop_if_exists=False)
+            doc_chunk_store._ensure_loaded()
+            if user_profile_store and artifact_summary_store and embedding_service:
+                chat_engine = ChatEngine(
+                    config=config,
+                    doc_store=doc_chunk_store,
+                    artifact_store=artifact_summary_store,
+                    user_store=user_profile_store,
+                    embedding_service=embedding_service,
+                    llm_model=config.profile_llm_model,
+                )
+                logger.info("Chat engine initialized")
+        except Exception as e:
+            logger.warning(f"Chat engine not ready: {e}")
+            doc_chunk_store = None
+            chat_engine = None
 
         # Pre-warm the catalog cache
         try:
@@ -594,6 +617,102 @@ async def sync_artifact_summaries(force_full: bool = False):
     except Exception as e:
         logger.error(f"Artifact summary sync failed: {e}")
         raise HTTPException(status_code=500, detail=f"Artifact summary sync failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Chatbot endpoints
+# ---------------------------------------------------------------------------
+
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="'user' or 'assistant'")
+    content: str
+
+class ChatRequest(BaseModel):
+    query: str = Field(..., description="User's question")
+    history: List[ChatMessage] = Field(default_factory=list, description="Prior conversation turns")
+
+class ArtifactResult(BaseModel):
+    title: str
+    reason: str
+    owner: str
+
+class UserResult(BaseModel):
+    name: str
+    reason: str
+    skills: List[str]
+
+class SourceResult(BaseModel):
+    file: str
+    doc_id: str
+
+class ChatResponse(BaseModel):
+    answer: str
+    intent: str
+    confidence: float
+    artifacts: List[ArtifactResult] = Field(default_factory=list)
+    users: List[UserResult] = Field(default_factory=list)
+    sources: List[SourceResult] = Field(default_factory=list)
+
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """Enterprise chatbot: classify → retrieve → generate."""
+    if not chat_engine:
+        raise HTTPException(
+            status_code=503,
+            detail="Chat engine not ready. Ensure platform_docs, artifact_summaries, and user_profiles are indexed.",
+        )
+    try:
+        import asyncio
+        history_dicts = [{"role": m.role, "content": m.content} for m in request.history]
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, lambda: chat_engine.chat(request.query, history_dicts))
+        return ChatResponse(
+            answer=result["answer"],
+            intent=result["intent"],
+            confidence=result["confidence"],
+            artifacts=[ArtifactResult(**a) for a in result.get("artifacts", [])],
+            users=[UserResult(**u) for u in result.get("users", [])],
+            sources=[SourceResult(**s) for s in result.get("sources", [])],
+        )
+    except Exception as e:
+        logger.error(f"Chat endpoint failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Chat failed: {e}")
+
+
+@app.post("/admin/ingest-docs")
+async def ingest_docs(drop_existing: bool = False):
+    """Ingest Word documents from platform_documents/ into the platform_docs Milvus collection."""
+    global doc_chunk_store, chat_engine
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: ingest_platform_docs(drop_existing=drop_existing)
+        )
+        # Reload store after ingestion
+        doc_chunk_store = DocumentChunkStore(config)
+        doc_chunk_store.create_collection(drop_if_exists=False)
+        doc_chunk_store._ensure_loaded()
+        # Reinitialise engine with fresh store
+        if user_profile_store and artifact_summary_store and embedding_service:
+            chat_engine = ChatEngine(
+                config=config,
+                doc_store=doc_chunk_store,
+                artifact_store=artifact_summary_store,
+                user_store=user_profile_store,
+                embedding_service=embedding_service,
+                llm_model=config.profile_llm_model,
+            )
+        return {
+            "status": "completed",
+            "inserted": result["inserted"],
+            "files_processed": result["files_processed"],
+            "errors": result["errors"],
+        }
+    except Exception as e:
+        logger.error(f"Doc ingestion failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Doc ingestion failed: {e}")
 
 
 if __name__ == "__main__":
