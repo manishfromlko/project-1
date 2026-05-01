@@ -174,14 +174,32 @@ class ChatEngine:
         if history:
             messages = [messages[0]] + history + [messages[-1]]
 
-        # 7. Generate — trace_id groups this under the same Langfuse trace
+        source_count = len(doc_hits) + len(artifact_hits) + len(user_hits)
+
+        # 7. Generate — full trace context enriches the root Langfuse trace
         try:
             response = self.client.chat.completions.create(
                 model=self.llm_model,
                 messages=messages,
                 temperature=0.2,
                 max_tokens=600,
-                extra_body=litellm_metadata(trace_id, "generate", session_id=session_id),
+                extra_body=litellm_metadata(
+                    trace_id,
+                    "generate",
+                    session_id=session_id,
+                    trace_name=f"chat · {intent}",
+                    tags=[f"intent:{intent}", f"model:{self.llm_model}"],
+                    trace_metadata={
+                        "query": query,
+                        "search_query": search_query,
+                        "intent": intent,
+                        "confidence": round(confidence, 4),
+                        "source_count": source_count,
+                        "doc_hits": len(doc_hits),
+                        "artifact_hits": len(artifact_hits),
+                        "user_hits": len(user_hits),
+                    },
+                ),
             )
             answer = response.choices[0].message.content.strip()
         except Exception as e:
@@ -199,7 +217,11 @@ class ChatEngine:
         )
         result["trace_id"] = trace_id
 
-        # 9. Auto heuristic scoring (no LLM, runs inline)
-        score_response_quality(trace_id, answer, intent)
+        # 9. Heuristic quality scores — posted to Langfuse via SDK (no LLM call)
+        score_response_quality(
+            trace_id, answer, intent,
+            confidence=confidence,
+            source_count=source_count,
+        )
 
         return result

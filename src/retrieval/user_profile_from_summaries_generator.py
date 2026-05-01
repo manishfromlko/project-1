@@ -65,7 +65,6 @@ def _build_summaries_context(summaries: List[Dict]) -> str:
 
 def generate_profiles_from_summaries(
     config: RetrievalConfig,
-    openai_api_key: str,
     model: str = "gpt-4o-mini",
 ) -> List[Dict]:
     """

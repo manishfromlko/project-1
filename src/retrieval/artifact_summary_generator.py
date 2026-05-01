@@ -71,7 +71,6 @@ def _call_llm(
 
 def generate_artifact_summaries(
     catalog_path: str,
-    openai_api_key: str,
     model: str = "gpt-4o-mini",
     temperature: float = 0.0,
     max_tokens: int = 220,
