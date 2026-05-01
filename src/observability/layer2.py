@@ -49,6 +49,9 @@ def _make_sync_client():
     return OpenAI(api_key=api_key, base_url=base_url)
 
 
+_EVAL_MODEL = "gpt-4o"  # stronger than the generation model for reliable metric scores
+
+
 def _make_ragas_components():
     from openai import AsyncOpenAI
     base_url = os.getenv("LITELLM_BASE_URL", "")
@@ -58,7 +61,7 @@ def _make_ragas_components():
     # Both LLM and embeddings wrappers need an AsyncOpenAI client so that
     # RAGAS can call agenerate() / aembed_text() inside ascore()
     async_client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-    llm = llm_factory("gpt-4o-mini", client=async_client)
+    llm = llm_factory(_EVAL_MODEL, client=async_client)
     emb = OpenAIEmbeddings(client=async_client, model="text-embedding-3-small")
     return llm, emb
 
@@ -113,21 +116,28 @@ async def _run_ragas_eval(
 
 # ── LLM-as-judge ──────────────────────────────────────────────────────────────
 
+_JUDGE_MODEL = "gpt-4o"  # stronger model than the generation model (gpt-4o-mini)
+
+
 def _run_llm_judge(trace_id: str, query: str, answer: str) -> None:
     client = _make_sync_client()
     if client is None:
         return
 
     prompt = (
-        "Rate how well the user profile below answers the question.\n\n"
+        "You are an impartial evaluator. Rate how well the user profile below answers the question.\n\n"
         f"Question: {query}\n\n"
         f"Profile:\n{answer}\n\n"
-        "Reply with a single decimal number between 0.0 (completely irrelevant) "
-        "and 1.0 (perfectly relevant). Nothing else."
+        "Scoring criteria:\n"
+        "  1.0 — profile directly and completely answers the question\n"
+        "  0.7 — profile is about the right person but only partially answers\n"
+        "  0.3 — profile is loosely related but mostly irrelevant\n"
+        "  0.0 — profile has nothing to do with the question\n\n"
+        "Reply with a single decimal number only. No explanation."
     )
     try:
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=_JUDGE_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
             max_tokens=10,
