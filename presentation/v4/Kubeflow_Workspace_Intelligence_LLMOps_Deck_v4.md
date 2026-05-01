@@ -1,6 +1,6 @@
 # Kubeflow Workspace Intelligence LLMOps Deck v4
 
-Interview-ready slide content generated from the current codebase.
+Interview-ready presentation content generated from the current codebase.
 
 Source of truth used:
 - `README.md`
@@ -14,25 +14,23 @@ Source of truth used:
 
 Accuracy note:
 - The checked-in ingestion catalog currently contains 5 workspaces and 211 artifacts: 132 notebooks, 75 scripts, and 4 text files.
-- The prompt mentions approximately 250 notebooks. I would present that as an intended/expandable dataset size, not as the current indexed snapshot.
+- The prompt mentions approximately 250 notebooks. Present that as an expandable target size, not the current checked-in snapshot.
 
 ---
 
 ## Slide 1: Title
 
 ### Content
-- **Kubeflow Workspace Intelligence with RAG and LLMOps**
-- Production-style assistant for workspace knowledge, notebook discovery, and user expertise profiling
-- Built for data scientists and ML engineers
-- Core stack: FastAPI, Next.js, Milvus, OpenAI-compatible LiteLLM gateway, Langfuse, RAGAS
+- **Kubeflow Workspace Intelligence**
+- RAG-based chatbot with LLMOps observability and evaluation
+- Production-style assistant for workspace knowledge, notebook discovery, platform docs QA, and user expertise profiling
+- FastAPI | Next.js | Milvus | LiteLLM | Langfuse | RAGAS
 
 ### Speaker Notes
-This project is a RAG-based intelligence layer over Kubeflow-style workspaces. The goal is not a generic chatbot. The system understands notebooks, scripts, platform documents, and generated user profiles so a data scientist can ask questions like: "How do I submit a Spark job?", "Find notebooks using PySpark classification", or "Who has worked on NLP?"
+Frame this as a production-style LLMOps system, not a generic chatbot wrapper. The project connects ingestion, retrieval, generation, tracing, and evaluation into one inspectable workflow for data scientists and ML engineers.
 
-The implementation is production-style because it includes ingestion, indexing, retrieval, generation, web/API separation, observability, evaluation, and admin workflows. The LLMOps part is especially important: every LLM call routes through LiteLLM and is traced in Langfuse, while response quality is evaluated with RAGAS and LLM-as-judge.
-
-### Suggested Diagram
-Title slide visual: simple horizontal strip showing **Workspace Artifacts -> RAG Indexes -> Intent-Routed Assistant -> Langfuse/RAGAS Feedback Loop**.
+### Diagram
+Title slide uses a clean stack tagline rather than a detailed diagram.
 
 ---
 
@@ -40,66 +38,37 @@ Title slide visual: simple horizontal strip showing **Workspace Artifacts -> RAG
 
 ### Content
 - Kubeflow workspaces become knowledge silos as notebooks and scripts grow
-- Search by filename is weak for ML intent: models, tools, datasets, techniques
-- New team members cannot quickly identify prior work or domain owners
-- Chatbot answers need grounding, observability, and evaluation, not just "best effort" LLM calls
+- Filename search misses ML intent: tools, models, datasets, techniques
+- Teams need grounded answers, expertise discovery, and operational visibility
 
 ### Speaker Notes
-In ML teams, a large part of institutional memory lives inside notebooks. That memory is hard to query because notebook titles rarely capture the actual work. A notebook named `Classification.ipynb` may contain Spark setup, feature engineering, model selection, and evaluation logic.
-
-The second problem is expertise discovery. If I want to know who worked on recommender systems or Spark streaming, that information is distributed across artifacts. The project solves this by distilling artifact-level summaries and rolling them up into user profiles.
-
-The final problem is operational. A demo chatbot is easy; a system you can reason about in production needs traceability, cost visibility, prompt logs, and quality evaluation.
-
-### Suggested Diagram
-Problem diagram: three disconnected boxes labeled **Notebooks**, **Scripts**, **Docs**, each pointing to pain points: **hard to search**, **hard to attribute expertise**, **hard to trust answers**.
+The problem is discovery plus trust. Notebooks hold institutional memory, but that memory is hard to query by filename and hard to evaluate once an LLM is involved. A usable enterprise assistant needs retrieval grounding, traceability, and quality checks.
 
 ---
 
 ## Slide 3: Solution Overview
 
 ### Content
-- RAG assistant over three knowledge surfaces:
-  - Platform documentation
-  - Workspace artifact summaries
-  - User expertise profiles
-- Intent classifier routes queries to DOC_QA, ARTIFACT_SEARCH, USER_SEARCH, HYBRID, or OUT_OF_SCOPE
-- Semantic retrieval uses OpenAI embeddings and Milvus vector collections
-- LLMOps loop captures traces, scores, and RAG quality metrics
+- Intent-routed RAG assistant over platform docs, artifact summaries, and user profiles
+- Semantic retrieval backed by OpenAI embeddings and Milvus collections
+- LiteLLM and Langfuse provide request-level visibility across classify, rewrite, and generate
+- RAGAS and LLM-as-judge evaluate groundedness and relevance after the answer returns
 
 ### Speaker Notes
-The system separates knowledge into different retrieval surfaces rather than throwing everything into one vector index. Platform docs answer "how do I use the platform" questions. Artifact summaries answer "find code/notebooks like this" questions. User profiles answer "who works on this" questions.
-
-The classifier is itself an LLM call. It decides the route and records a confidence score. This matters because different query types need different retrieval behavior. A person lookup like "Tell me about Alex Chen" should not be treated the same as "How do I submit a Spark job?"
-
-The HYBRID route is important for realistic enterprise queries. A user may ask, "Who has examples for Spark jobs?" That crosses documentation, artifacts, and people.
-
-### Suggested Diagram
-Use `presentation/v4/high-level-architecture-v4.mmd`.
+The system separates knowledge surfaces instead of putting everything into one mixed index. Platform docs answer how-to questions, artifact summaries power notebook/script discovery, and user profiles support expertise search.
 
 ---
 
 ## Slide 4: Dataset and Ingestion Scope
 
 ### Content
-- Current catalog: 5 workspaces, 211 artifacts
-- Artifact types indexed:
-  - 132 Jupyter notebooks
-  - 75 scripts
-  - 4 text files
+- Current checked-in catalog: 5 workspaces, 211 artifacts
+- Artifact mix: 132 notebooks, 75 scripts, 4 text files
 - CSV, binary, archive, and unsupported files are excluded from semantic indexing
-- Full and incremental ingestion modes are implemented
+- Full and incremental ingestion use content hashes to control reprocessing cost
 
 ### Speaker Notes
-The ingestion pipeline scans workspace directories and creates a catalog under `dataset/.ingestion/ingestion_catalog.json`. It supports full ingestion and incremental ingestion. Incremental mode uses content hashes to detect unchanged files, which avoids needless reprocessing and reduces embedding cost.
-
-The code intentionally excludes raw datasets such as CSV files from semantic indexing. That is a design decision: the goal is to understand what people are working on, not to embed raw rows of data. Supported artifacts are notebooks, scripts, and text/markdown-style files.
-
-The prompt says approximately 250 notebooks. In the checked-in catalog, the actual indexed snapshot has 132 notebooks. For an interview, I would state the concrete catalog numbers and say the architecture scales to a larger notebook corpus.
-
-### Suggested Diagram
-Ingestion funnel:
-**Workspace folders -> file classifier/guardrails -> metadata extraction -> ingestion catalog -> indexing jobs**.
+The current catalog is smaller than the prompt’s approximate dataset size. In an interview, be precise: the repo snapshot has 132 notebooks and the architecture can scale to a larger corpus. The exclusion of raw datasets is intentional because the goal is to understand work patterns and artifact intent, not embed raw tabular data.
 
 ---
 
@@ -108,443 +77,294 @@ Ingestion funnel:
 ### Content
 - Workspace browsing and profiling
 - Notebook/script semantic search
-- LLM-generated artifact summaries
-- User profiles generated from artifact summaries
-- Platform documentation QA from `.docx` guides
-- Enterprise assistant with intent routing, query rewriting, citations/sources, and feedback scores
+- LLM-generated artifact summaries and user profiles
+- Platform documentation QA from Word documents
+- Assistant with intent routing, query rewriting, sources, feedback, and trace IDs
 
 ### Speaker Notes
-The prompt listed user profiling, notebook summarization, and semantic search. The implemented project goes further.
-
-Artifact summaries are generated from notebook/script content and indexed into a dedicated Milvus collection. User profiles are generated from those summaries rather than directly from raw code, which gives the LLM a cleaner, lower-noise input.
-
-The chatbot also supports platform documentation QA. It ingests Word documents from `platform_documents/`, splits them into chunks, embeds them, and retrieves them for DOC_QA. This makes the assistant useful for onboarding and operational questions, not just artifact discovery.
-
-### Suggested Diagram
-Capability map with three columns:
-**Artifacts**, **People**, **Platform Docs**. Each column shows storage/index and example query.
+The implementation goes beyond the initial prompt. In addition to notebook search and profiling, it supports platform-doc QA, hybrid routing, user resolution, feedback scoring, and admin sync endpoints.
 
 ---
 
 ## Slide 6: High-Level Architecture
 
 ### Content
-- Frontend: Next.js application with server-side API routes
-- Backend: FastAPI retrieval and orchestration service
-- Vector store: Milvus collections for artifacts, summaries, profiles, and docs
-- LLM gateway: LiteLLM proxy with OpenAI-compatible client
-- Observability: Langfuse traces and scores
+- Next.js acts as a BFF and proxies to FastAPI
+- FastAPI orchestrates search, chat, sync, metrics, and feedback
+- Milvus stores separate knowledge collections
+- LiteLLM and Langfuse make LLM calls observable
 
 ### Speaker Notes
-The web frontend does not call Python directly from the browser. It uses Next.js API routes as a backend-for-frontend layer and proxies to the FastAPI service using `PYTHON_API_URL`. This gives cleaner separation between browser concerns and backend retrieval/generation concerns.
+Walk left to right: users access the Next.js UI; server-side routes call FastAPI; FastAPI orchestrates ingestion-backed retrieval, chat routing, LLM generation, tracing, and scoring. The diagram should make clear that the UI, API, knowledge layer, and LLMOps layer are separate concerns.
 
-FastAPI owns the retrieval API, admin sync endpoints, chatbot orchestration, metrics endpoint, and observability feedback endpoints. Milvus stores the vectorized knowledge surfaces. LiteLLM gives the code one OpenAI-compatible client path and centralizes model routing and observability callbacks.
+### Diagram
+Native PowerPoint architecture diagram plus Mermaid source:
+- `presentation/v4/high-level-architecture-v4.mmd`
 
-### Suggested Diagram
-Use the high-level architecture diagram in `presentation/v4/high-level-architecture-v4.mmd`.
+Diagram structure:
+- Request path: Users -> Next.js BFF -> FastAPI Retrieval API -> ChatEngine -> Response + trace_id
+- Knowledge layer: `kubeflow_artifacts`, `artifact_summaries`, `user_profiles`, `platform_docs`
+- LLMOps layer: LiteLLM -> model provider, Langfuse traces/scores, RAGAS/LLM judge
 
 ---
 
-## Slide 7: Ingestion and Indexing Pipeline
+## Slide 7: Data Flow: Offline Build and Online Serving
+
+### Content
+- Offline path builds catalog, summaries, profiles, document chunks, and vector indexes
+- Online path classifies the query, retrieves context, generates an answer, and returns trace_id
+- Evaluation path posts quality scores to the same Langfuse trace asynchronously
+
+### Speaker Notes
+Use this slide to show that RAG has two lifecycles. Offline jobs create and refresh the knowledge layer. Online serving uses that layer to answer user questions. The observability path follows the online request and then posts delayed quality scores after the answer returns.
+
+### Diagram
+Native PowerPoint data-flow diagram plus Mermaid source:
+- `presentation/v4/data-flow-v4.mmd`
+
+Diagram structure:
+- Offline build: Workspace files -> ingestion catalog -> parse/chunk -> embeddings -> Milvus collections -> summaries/profiles/docs
+- Online serving: User query -> classify/rewrite -> retrieve context -> prompt/generate -> answer + sources + trace_id
+- Evaluation: response/context -> RAGAS or LLM judge -> Langfuse scores
+
+---
+
+## Slide 8: Ingestion and Indexing Pipeline
 
 ### Content
 - Scan workspace directories and classify supported files
 - Extract notebook/script metadata: tools, table references, database targets
-- Convert artifacts into LangChain documents
-- Chunk text by content type
-- Generate embeddings with `text-embedding-3-small`
-- Upsert vectors into Milvus
+- Convert artifacts into LangChain documents and extract notebook cell text
+- Chunk by content type, embed with `text-embedding-3-small`, and upsert to Milvus
 
 ### Speaker Notes
-The ingestion phase creates the structured catalog. The retrieval indexer then loads that catalog through `DocumentLoader`, extracts notebook cell content from `.ipynb` JSON, applies document guardrails, and converts each artifact into a LangChain document with metadata.
-
-Chunking is content-aware. Python/scripts use a code splitter, markdown uses a markdown splitter, and notebooks use recursive splitting because notebooks mix markdown and code. The default retrieval configuration uses 1000-character chunks with 200-character overlap.
-
-The vector indexer supports incremental mode. It queries already indexed artifact IDs in Milvus and only embeds new artifacts. This is a practical cost and latency control.
-
-### Suggested Diagram
-Flow:
-**Dataset -> IngestionPipeline -> Catalog JSON -> DocumentLoader -> TextProcessor -> EmbeddingService -> Milvus kubeflow_artifacts**.
+The ingestion phase creates the structured catalog. The retrieval indexer then loads that catalog, extracts notebook cell content, applies guardrails, chunks documents by type, generates embeddings, and inserts vectors into Milvus. Incremental indexing avoids re-embedding unchanged artifacts.
 
 ---
 
-## Slide 8: Retrieval Surfaces and Collections
+## Slide 9: Retrieval Surfaces
 
 ### Content
-- `kubeflow_artifacts`: raw artifact chunks for semantic search
-- `artifact_summaries`: LLM-generated summaries and tags
-- `user_profiles`: user-level expertise summaries
-- `platform_docs`: chunks from platform Word documents
-- Separate indexes keep retrieval intent and metadata clean
+- `kubeflow_artifacts`: raw artifact chunks for semantic artifact search
+- `artifact_summaries`: concise notebook/script descriptions and tags
+- `user_profiles`: generated expertise summaries by workspace owner
+- `platform_docs`: chunks extracted from platform Word documents
 
 ### Speaker Notes
-This is one of the stronger design decisions in the project. Instead of mixing every kind of content into one vector space, the system maintains separate stores for different use cases.
-
-Artifact search retrieves from summaries, not raw chunks, inside the chatbot. That gives more concise context for "find notebooks about X". User search retrieves from generated profiles. Documentation QA retrieves from platform docs. The older `/query` endpoint still supports vector search over catalog artifacts and can use hybrid retrieval.
-
-The tradeoff is operational complexity: multiple collections must be built and kept fresh. The benefit is better routing, cleaner prompts, and less irrelevant context.
-
-### Suggested Diagram
-Four Milvus cylinders with labels and example payload:
-**artifact chunks**, **artifact summaries**, **user profiles**, **platform docs**.
+Separate collections improve retrieval precision and prompt clarity. The tradeoff is that multiple stores must be built and refreshed. That is why the project includes admin endpoints for artifact summaries, profiles, and doc ingestion.
 
 ---
 
-## Slide 9: Chatbot Runtime Flow
+## Slide 10: Chatbot Runtime Flow
 
 ### Content
-- Generate a request-level `trace_id`
-- Classify intent with LLM
-- Rewrite query for retrieval recall
-- Retrieve from one or more stores
-- Build intent-specific prompt
-- Generate answer through LiteLLM
-- Format answer with sources, artifacts, users, and trace ID
+- One trace_id groups classify, rewrite, retrieve, generate, and scoring
+- Intent decides which store is queried and which prompt is built
+- USER_SEARCH uses exact/candidate name resolution before semantic retrieval
+- Scores and feedback are attached to the same Langfuse trace
 
 ### Speaker Notes
-The runtime flow is implemented in `ChatEngine`. It starts by generating a UUID trace ID. That trace ID is forwarded to every LLM call using LiteLLM metadata so classification, rewriting, and generation are grouped under one Langfuse trace.
+This is the core interview architecture slide. Emphasize that query classification controls retrieval, cost, prompt shape, and failure handling. The trace ID is propagated through LiteLLM metadata so Langfuse groups related model calls under one request.
 
-The query rewriter is a retrieval optimization step. The original user question is kept for final prompting, but the rewritten query is used for vector search to improve recall.
+### Diagram
+Native PowerPoint runtime-flow diagram plus Mermaid source:
+- `presentation/v4/chatbot-runtime-flow-v4.mmd`
 
-After retrieval, the engine builds a prompt matched to the intent: docs QA, artifact search, user search, or hybrid. The response formatter then extracts structured result fields for the frontend.
-
-### Suggested Diagram
-Use `presentation/v4/chatbot-runtime-flow-v4.mmd`.
+Diagram structure:
+- Query + trace_id -> IntentClassifier -> QueryRewriter -> RoutedRetriever -> PromptBuilder -> LiteLLM Generate -> Formatted Response
+- USER_SEARCH branch: candidate resolution -> exact profile fetch / disambiguation / semantic fallback
+- Observability branch: Layer 1 heuristic scores + Layer 2 RAGAS/LLM judge -> Langfuse trace
 
 ---
 
-## Slide 10: Intent Routing Design
+## Slide 11: Intent Routing
 
 ### Content
-- Supported intents:
-  - DOC_QA
-  - ARTIFACT_SEARCH
-  - USER_SEARCH
-  - HYBRID
-  - OUT_OF_SCOPE
-- USER_SEARCH has a special path for exact/ambiguous name matches
-- OUT_OF_SCOPE prevents unsupported real-time or external answers
+- DOC_QA routes to `platform_docs`
+- ARTIFACT_SEARCH routes to `artifact_summaries`
+- USER_SEARCH routes to direct profile lookup or `user_profiles`
+- HYBRID retrieves from docs, artifacts, and profiles
+- OUT_OF_SCOPE returns a bounded response instead of general model knowledge
 
 ### Speaker Notes
-The classifier returns intent, confidence, and reasoning. If classification fails, the code falls back to DOC_QA with low confidence. That is a conservative fallback because documentation QA is safer than pretending to know unknown workspace facts.
-
-USER_SEARCH is handled carefully. Before semantic search, the system uses string matching and RapidFuzz-style candidate retrieval over known user IDs. If there is one exact high-confidence match, it fetches the profile directly from Milvus and returns it without generation. If there are multiple candidates, it uses an LLM resolver for disambiguation. If there are no name candidates, it falls back to semantic user-profile retrieval.
-
-OUT_OF_SCOPE returns a bounded response instead of letting the LLM answer from general knowledge. This is a hallucination-control feature.
-
-### Suggested Diagram
-Decision tree:
-**Query -> Classifier -> intent branches**, with USER_SEARCH branch showing **name match -> exact return / disambiguate / vector fallback**.
+The classifier returns intent and confidence. Failure falls back to DOC_QA with low confidence, which is conservative compared with generating ungrounded workspace facts. OUT_OF_SCOPE is a hallucination-control mechanism.
 
 ---
 
-## Slide 11: LLM Orchestration with LiteLLM
+## Slide 12: LLM Orchestration with LiteLLM
 
 ### Content
-- All chat completions use an OpenAI-compatible client pointed at LiteLLM
-- LiteLLM centralizes model routing and provider configuration
-- Generation model defaults to `gpt-4o-mini`
-- Evaluation/judge paths use stronger `gpt-4o`
-- Trace metadata groups multi-step calls under one request
+- All chat calls use an OpenAI-compatible client pointed at LiteLLM
+- Generation defaults to `gpt-4o-mini` for cost-sensitive interaction
+- Evaluation and judge paths use `gpt-4o` for stronger scoring reliability
+- Trace metadata groups multi-step calls under one Langfuse request
 
 ### Speaker Notes
-The code uses `make_llm_client()` as the factory for OpenAI-compatible calls. The base URL is `LITELLM_BASE_URL`, defaulting to `http://localhost:4000`, with `LITELLM_API_KEY` used for the proxy.
-
-This is a good LLMOps design because application code does not need to know provider-specific details. If the model or provider changes, the proxy config can absorb much of that change.
-
-The project also makes a deliberate model tradeoff. The main assistant generation uses `gpt-4o-mini`, which is cost-efficient for production interaction. RAGAS and LLM-as-judge use `gpt-4o`, because evaluation quality benefits from a stronger model.
-
-### Suggested Diagram
-Box:
-**Application OpenAI client -> LiteLLM proxy -> model provider** with side path **LiteLLM callbacks -> Langfuse**.
+LiteLLM centralizes model routing, provider configuration, token/cost tracking, and Langfuse callbacks. This keeps application code provider-agnostic while preserving observability.
 
 ---
 
-## Slide 12: Layer 1 LLM Observability
+## Slide 13: Layer 1 Observability
 
 ### Content
-- LiteLLM forwards prompt/response traces to Langfuse
-- Captures token usage, cost, latency, and errors per LLM call
-- Groups classify, rewrite, and generate calls under one trace ID
-- Adds inline heuristic scores:
-  - response_length
-  - has_content
-  - intent_confidence
-  - source_count
+- LiteLLM forwards prompts, responses, latency, cost, tokens, and errors to Langfuse
+- Application posts `response_length`, `has_content`, `intent_confidence`, and `source_count`
+- The trace_id is returned so frontend feedback can attach to the same trace
 
 ### Speaker Notes
-Layer 1 answers: what happened during the LLM request? How many tokens did it use? How long did it take? What prompt and response were sent? Did the model call fail?
-
-The project has two complementary mechanisms. LiteLLM captures the raw LLM traces automatically. The app then posts response quality heuristics into Langfuse using the Langfuse SDK. These are not semantic correctness metrics; they are lightweight operational signals. For example, `source_count` helps catch cases where the model generated an answer with no retrieved grounding.
-
-The trace ID is returned to the frontend, which makes it possible to attach user feedback later.
-
-### Suggested Diagram
-Trace ladder:
-**classify span -> rewrite span -> generate span -> heuristic scores**, all under one Langfuse trace.
+Layer 1 tells us what happened operationally: latency, cost, token use, prompt/response, errors, and lightweight response health signals. These are not semantic quality metrics, but they are useful for debugging and cost control.
 
 ---
 
-## Slide 13: Layer 2 RAG Evaluation
+## Slide 14: Layer 2 RAG Evaluation
 
 ### Content
-- Runs after response in a background thread
-- RAGAS metrics implemented:
-  - faithfulness
-  - answer_relevancy
-  - context_precision
-- USER_SEARCH exact match uses LLM-as-judge: `profile_relevance`
+- Runs after the response in a background thread
+- RAGAS metrics: faithfulness, answer_relevancy, context_precision
+- Exact USER_SEARCH uses LLM judge score: profile_relevance
 - Scores are posted back to the same Langfuse trace
 
 ### Speaker Notes
-Layer 2 answers a different question than Layer 1: was the answer good and grounded?
-
-The implementation dispatches evaluation in a daemon thread after the API response returns. That is an important latency tradeoff. RAGAS can require multiple LLM calls, so running it inline would make the chat endpoint slow and unpredictable.
-
-For normal RAG paths, the code extracts contexts from doc hits, artifact summaries, or user profiles and runs faithfulness, answer relevancy, and context precision. For USER_SEARCH exact matches, there may be no generation or retrieved contexts in the RAGAS sense, so the system uses an LLM judge to score whether the returned profile answers the query.
-
-### Suggested Diagram
-Use `presentation/v4/observability-evaluation-flow-v4.mmd`.
+Layer 2 tells us whether the answer was good and grounded. It is asynchronous so RAGAS does not add user-facing latency. Exact people lookups use a different evaluator because direct profile retrieval is not the same shape as normal RAG generation.
 
 ---
 
-## Slide 14: Evaluation Interpretation
+## Slide 15: Evaluation Interpretation
 
 ### Content
-- Low faithfulness: answer includes claims unsupported by retrieved context
-- Low answer relevancy: answer does not address the user question
-- Low context precision: retriever returned weak or poorly ranked context
-- Low profile_relevance: returned user profile does not match the people-search intent
-- Combined scores guide whether to tune prompts, retrieval, or routing
+- Low faithfulness means answer claims are unsupported by retrieved context
+- Low answer_relevancy means the answer missed the user question
+- Low context_precision means retrieval returned weak or poorly ranked context
+- Low profile_relevance means people-search output did not match the ask
 
 ### Speaker Notes
-The useful part of RAG evaluation is diagnosis. A single "quality score" is less useful than knowing what failed.
-
-If faithfulness is low but answer relevancy is high, the assistant may be answering the question but inventing unsupported details. That points to prompt grounding and refusal behavior. If context precision is low, the generator may be fine but the retriever is feeding bad evidence. That points to chunking, embeddings, metadata filters, or separate collections.
-
-The project also supports manual/user feedback through `/observability/feedback`, which posts a binary `user_feedback` score to Langfuse.
-
-### Suggested Diagram
-2x2 matrix:
-**retrieval good/bad** vs **generation good/bad**, with example actions in each quadrant.
+These metrics are diagnostic. Low context precision points to retriever/chunking/index issues. Low faithfulness points to prompt grounding or generation behavior. Low intent confidence points to classifier review.
 
 ---
 
-## Slide 15: API and Web Application Surface
+## Slide 16: API and Web Surface
 
 ### Content
-- FastAPI endpoints:
-  - `/query` for semantic/hybrid artifact search
-  - `/chat` for assistant orchestration
-  - `/workspaces`, `/profile/workspace/{id}`, `/user-profiles`
-  - admin sync endpoints for indexes, summaries, profiles, and docs
-  - `/observability/score` and `/observability/feedback`
-- Next.js UI proxies `/api/*` to the Python backend
+- `/query`, `/chat`, `/workspaces`, `/user-profiles`, `/profile/workspace/{id}`
+- Admin endpoints rebuild indexes, summaries, profiles, and platform-doc chunks
+- Feedback and score endpoints attach quality signals to Langfuse traces
+- Next.js server routes proxy browser requests to FastAPI via `PYTHON_API_URL`
 
 ### Speaker Notes
-This is more than a backend script. The FastAPI service exposes operational endpoints for sync, retrieval, chat, health, metrics, and observability. That makes it easier to demo and operate.
-
-The Next.js app has pages/components for search, workspaces, profiles, analytics, settings, and chatbot interaction. Server-side API routes prevent the browser from coupling directly to the Python service.
-
-The admin endpoints matter in an interview because they show lifecycle thinking. You can rebuild vector indexes, regenerate artifact summaries, regenerate profiles from summaries, and ingest platform docs.
-
-### Suggested Diagram
-API map:
-**Next.js UI -> /api routes -> FastAPI**, with endpoint groups: **search**, **chat**, **profiles**, **admin**, **observability**.
+This is more than a backend script. It has serving endpoints, admin lifecycle endpoints, observability endpoints, and a web UI that uses server-side API routes as a boundary between the browser and Python backend.
 
 ---
 
-## Slide 16: Design Decisions and Tradeoffs
+## Slide 17: Design Decisions and Tradeoffs
 
 ### Content
-- Separate vector collections over one mixed index
-- Summary-first profiles over raw-code profile generation
-- Async RAG evaluation over inline evaluation
-- LLM classifier over fixed keyword routing
-- Exact user lookup before semantic people search
-- LiteLLM gateway over direct provider calls
+- Separate vector collections improve precision but require freshness management
+- Summary-first profiles reduce token noise but depend on summary quality
+- Async evaluation preserves latency but scores arrive later
+- LLM classifier is flexible but introduces uncertainty and model dependency
+- LiteLLM adds a service but centralizes routing and observability
 
 ### Speaker Notes
-Separate vector collections improve precision and prompt clarity, but they add sync complexity. Summary-first profiles reduce noise and token volume, but quality depends on the artifact summary step. Async evaluation preserves user latency, but scores appear seconds later rather than immediately.
-
-The LLM classifier is flexible and handles natural language better than keyword rules, but it introduces a model dependency and classification uncertainty. That is why the system records classifier confidence and includes OUT_OF_SCOPE handling.
-
-Exact user lookup before semantic search is a practical optimization. If the user asks for a named person, direct retrieval is more reliable and cheaper than vector search plus generation.
-
-LiteLLM introduces another service, but it centralizes observability and model routing. That is a reasonable tradeoff for LLMOps.
-
-### Suggested Diagram
-Tradeoff table with columns:
-**Decision**, **Why**, **Cost/Risk**, **Mitigation**.
+Each decision has a cost. The architecture is stronger when you can explain why the tradeoff is acceptable for this use case and how the system mitigates the downside.
 
 ---
 
-## Slide 17: Failure Cases and Mitigations
+## Slide 18: Failure Cases and Mitigations
 
 ### Content
-- Missing or stale indexes -> admin sync endpoints and health checks
-- Low retrieval recall -> query rewriting, chunk overlap, intent-specific stores
-- Hallucinated answers -> OUT_OF_SCOPE guard, retrieved-context prompts, faithfulness scoring
-- Ambiguous people queries -> candidate resolution before vector fallback
-- LLM/provider failure -> bounded error response and trace visibility
+- Missing or stale indexes -> health checks and admin sync endpoints
+- Low retrieval recall -> query rewriting, chunk overlap, and intent-specific stores
+- Hallucinated answers -> OUT_OF_SCOPE guard, grounded prompts, faithfulness scoring
+- Ambiguous people queries -> candidate resolution before semantic fallback
 - Evaluation cost/latency -> background RAGAS execution
 
 ### Speaker Notes
-The failure modes are realistic. A RAG system can fail before the LLM ever sees a prompt: documents may not be indexed, collections may not be loaded, embeddings may fail, or the wrong retrieval surface may be used.
-
-The project mitigates some of that with startup initialization, health endpoints, admin sync flows, query rewriting, separate stores, and observable traces.
-
-The system is not fully production-complete. Areas I would still harden include stronger auth/ACL filtering, automated regression eval sets, CI gates for prompts, queue-based background evaluation instead of daemon threads, and stronger monitoring around Milvus and the FastAPI process.
-
-### Suggested Diagram
-Failure pipeline with red warning points:
-**ingest -> index -> classify -> retrieve -> generate -> evaluate**, each annotated with mitigation.
+A strong interview answer names realistic RAG failures and ties each one to a detection or mitigation mechanism. This system is built to make failures observable rather than silent.
 
 ---
 
-## Slide 18: Production Readiness
+## Slide 19: Production Readiness: Current State
 
 ### Content
-- Implemented:
-  - full/incremental ingestion
-  - vector indexing
-  - multi-intent assistant
-  - LiteLLM + Langfuse tracing
-  - RAGAS/LLM-judge scoring
-  - frontend/backend separation
-  - admin sync and feedback endpoints
-- Next hardening:
-  - auth and workspace ACL enforcement
-  - scheduled eval datasets and quality gates
-  - queue-backed evaluation workers
-  - SLO dashboards and alerting
-  - prompt/version release process
+- Implemented: full/incremental ingestion, indexing, assistant runtime, tracing, scoring, RAGAS, feedback, admin sync
+- Observable request lifecycle: classify, rewrite, retrieve, generate, score
+- Operational controls exist, but identity, ACLs, alerting, and release gates still need hardening
 
 ### Speaker Notes
-This slide should be honest. The project is production-style, not necessarily production-final.
-
-The implemented pieces demonstrate the core architecture and operational thinking. The next steps are what I would expect before an enterprise rollout: identity, authorization, automated evaluation, alerting, deployment automation, and prompt/model versioning.
-
-The important interview framing is that LLMOps is not only tracing. It is the loop from ingestion quality to retrieval quality to generation quality to user feedback and production diagnostics.
-
-### Suggested Diagram
-Readiness checklist split into **Implemented Now** and **Production Hardening**.
+Be honest: this is production-style now. It becomes production-ready after security, reliability, deployment, and quality gates are added.
 
 ---
 
-## Slide 19: Demo Walkthrough
+## Slide 20: Production Readiness: Security and Governance
 
 ### Content
-- Start with workspace inventory and profiles
-- Show semantic artifact search
-- Ask platform documentation question
-- Ask people/expertise question
-- Show Langfuse trace for the same `trace_id`
-- Show RAGAS/LLM-judge scores attached to the trace
+- Add authentication and propagate user identity from UI to FastAPI
+- Apply workspace/user ACL filters before retrieval and before answer generation
+- Move secrets to a managed secret store and rotate LiteLLM/Langfuse keys
+- Add audit logs for admin syncs, data access, feedback, and prompt changes
+- Introduce PII/sensitive-content checks for artifacts and trace payloads
 
 ### Speaker Notes
-Demo sequence:
-
-1. Open the Next.js webapp and show the workspace list. Point out that this is backed by the ingestion catalog.
-2. Open a workspace profile. Highlight extracted tools, topics, file types, and recent artifacts.
-3. Use search for a technical query such as "PySpark classification examples" or "recommender systems".
-4. Open the AI Assistant and ask: "How do I submit a Spark job on the platform?" This should route to DOC_QA and retrieve platform document chunks.
-5. Ask: "Find notebooks about recommender systems." This should route to ARTIFACT_SEARCH.
-6. Ask: "Who works on Spark ML?" This should route to USER_SEARCH or HYBRID depending on wording.
-7. Copy the returned `trace_id` from the API response or logs and open Langfuse.
-8. Show grouped spans for classify, rewrite, and generate. Then show scores: response_length, has_content, intent_confidence, source_count, plus RAGAS metrics after the background job completes.
-
-### Suggested Diagram
-Demo storyboard:
-**UI -> query -> answer -> trace -> scores**.
+This is the first production-readiness path: prevent data leakage. In enterprise RAG, ACL-aware retrieval is not optional because generated answers can expose retrieved context.
 
 ---
 
-## Slide 20: Interview Close
+## Slide 21: Production Readiness: Reliability and Quality Gates
 
 ### Content
-- This project converts workspace artifacts into a queryable intelligence layer
-- The architecture separates ingestion, retrieval, orchestration, and evaluation
-- LLM calls are observable by default through LiteLLM and Langfuse
-- RAG quality is measured with faithfulness, answer relevancy, context precision, and profile relevance
-- The system is built to explain failures, not just return answers
+- Move background RAGAS work to a queue-backed worker for retry and backpressure
+- Create scheduled eval datasets for DOC_QA, ARTIFACT_SEARCH, USER_SEARCH, and HYBRID
+- Gate prompt/model/index changes on regression metrics before promotion
+- Add SLO dashboards for latency, error rate, index freshness, cost/query, and faithfulness
+- Use canary releases for classifier prompts and generation prompts
 
 ### Speaker Notes
-The closing message is that this is an engineering system, not a chatbot wrapper. The strongest parts are the separation of retrieval surfaces, the intent-routed orchestration, and the observability/evaluation loop.
-
-In an interview, I would emphasize the design decisions and tradeoffs: why summaries exist, why user profiles are generated from summaries, why evaluation is async, why LiteLLM sits in the middle, and how traces map to debugging actions.
-
-End by saying the next production step would be hardening identity/ACLs and creating an automated regression suite over representative queries.
-
-### Suggested Diagram
-Final flywheel:
-**Ingest -> Retrieve -> Generate -> Trace -> Evaluate -> Improve**.
+This is how production readiness can be met operationally: make quality measurable, make evaluation reliable, and make changes releasable with regression checks.
 
 ---
 
-# Demo Walkthrough Script
+## Slide 22: Production Readiness: Deployment and Operations
 
-Use this as a spoken sequence during a live interview demo.
+### Content
+- Containerize FastAPI, Next.js, LiteLLM, Langfuse, and Milvus with environment-specific configs
+- Run ingestion/indexing as scheduled jobs with idempotent full and incremental modes
+- Add CI for unit, integration, retrieval, and API contract tests
+- Define runbooks for stale indexes, failed LLM calls, high cost, and low evaluation scores
 
-1. "I will start from the workspace view. The backend has scanned five Kubeflow-style workspaces and created an ingestion catalog of notebooks, scripts, and text artifacts."
-2. "The profiler gives a quick summary of a user's workspace: what tools appear, what topics recur, and what artifacts were recently touched."
-3. "Now I will search for an ML concept rather than a filename. This goes through vector retrieval, so the system can find semantically related notebooks even when titles do not match the query exactly."
-4. "Next I will use the assistant. This question is about platform usage, so the LLM classifier routes it to DOC_QA and retrieves chunks from the platform documentation collection."
-5. "This next question asks for notebooks, so it routes to ARTIFACT_SEARCH. The retriever uses generated artifact summaries rather than raw notebook chunks to keep context concise."
-6. "For people search, the system first tries name/candidate resolution. If it is an exact match, it returns the stored profile directly. If it is expertise-based, it performs semantic retrieval over user profiles."
-7. "Every LLM call in this interaction goes through LiteLLM. The app passes the same trace ID across classify, rewrite, and generate, so Langfuse shows the full request lifecycle."
-8. "After the response returns, Layer 2 evaluation runs in the background. RAGAS posts faithfulness, answer relevancy, and context precision to the same trace. Exact user-profile lookups use an LLM judge called profile_relevance."
-9. "This lets me debug quality. If context precision is low, I tune retrieval or chunking. If faithfulness is low, I tune prompts and grounding. If intent confidence is low, I review classifier behavior."
+### Speaker Notes
+This slide completes the production-readiness path. It explains how the system moves from local/demo operation to repeatable environments and on-call ownership.
 
-# Diagram Descriptions
+---
 
-## Architecture Diagram
+## Slide 23: Demo Walkthrough
 
-Draw the system as five layers:
+### Content
+- Show workspaces and a generated workspace/user profile
+- Run semantic artifact search for an ML concept
+- Ask DOC_QA, ARTIFACT_SEARCH, and USER_SEARCH questions in the assistant
+- Open Langfuse trace and show classify, rewrite, generate, and score events
 
-1. **Experience layer**: Data scientists and ML engineers using the Next.js webapp.
-2. **API layer**: Next.js server-side API routes proxying to FastAPI.
-3. **Orchestration layer**: ChatEngine with intent classification, query rewriting, retrieval routing, prompt building, generation, and formatting.
-4. **Knowledge layer**: Milvus collections for artifact chunks, artifact summaries, user profiles, and platform docs.
-5. **LLMOps layer**: LiteLLM proxy, Langfuse traces/scores, RAGAS evaluation, LLM-as-judge, feedback endpoint.
+### Speaker Notes
+Demo the loop: user question, routed answer, trace, quality score, diagnosis. Keep the demo focused on engineering behavior rather than UI decoration.
 
-## Runtime Flow Diagram
+### Demo Script
+1. Show the workspace list and explain it comes from the ingestion catalog.
+2. Open a profile and point out generated expertise and artifact context.
+3. Search for a concept such as "PySpark classification examples".
+4. Ask a platform question: "How do I submit a Spark job on the platform?"
+5. Ask an artifact question: "Find notebooks about recommender systems."
+6. Ask a people question: "Who works on Spark ML?"
+7. Open Langfuse and show the same trace_id with classify, rewrite, generate, and scores.
 
-Draw:
+---
 
-`User Query -> trace_id -> IntentClassifier -> QueryRewriter -> Routed Retriever -> Prompt Builder -> LiteLLM Generate -> Formatted Response -> Langfuse Trace`
+## Slide 24: Close
 
-Then add a background branch:
+### Content
+- Turns workspace artifacts into a queryable intelligence layer
+- Separates ingestion, retrieval, orchestration, observability, and evaluation
+- Built to explain failures, not just return answers
+- Clear production path: security, quality gates, deployment automation, and operational runbooks
 
-`Formatted Response -> Background Eval -> RAGAS / LLM Judge -> Langfuse Scores`
-
-## Evaluation Pipeline Diagram
-
-Draw two paths:
-
-1. **Normal RAG path**: answer + query + retrieved contexts -> RAGAS -> faithfulness, answer_relevancy, context_precision -> Langfuse score API.
-2. **Exact USER_SEARCH path**: query + returned profile -> LLM judge -> profile_relevance -> Langfuse score API.
-
-## Failure Analysis Diagram
-
-Draw the pipeline:
-
-`Ingestion -> Indexing -> Intent Routing -> Retrieval -> Generation -> Evaluation`
-
-Mark likely failures:
-
-- skipped/missing files
-- stale Milvus collections
-- wrong intent
-- weak retrieval context
-- hallucinated answer
-- delayed/missing evaluation score
-
-Then attach mitigation labels:
-
-- incremental/full sync
-- health checks
-- confidence score
-- query rewrite and collection separation
-- faithfulness evaluation
-- background logs and Langfuse flush
+### Speaker Notes
+The strongest takeaway is engineering discipline: observable, evaluable, grounded RAG with a practical hardening path. Close by emphasizing the decisions and tradeoffs rather than marketing language.
