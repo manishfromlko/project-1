@@ -28,7 +28,12 @@ import logging
 import uuid
 from typing import Dict, List, Optional
 
-from ...observability import make_llm_client, litellm_metadata, score_response_quality
+from ...observability import (
+    evaluate_in_background,
+    litellm_metadata,
+    make_llm_client,
+    score_response_quality,
+)
 from ..artifact_summary_store import ArtifactSummaryStore
 from ..config import RetrievalConfig
 from ..embeddings import EmbeddingService
@@ -127,14 +132,20 @@ class ChatEngine:
                     uid = resolved["exact_uid"]
                     profile = self.user_store.get_profile(uid)
                     if profile:
+                        answer = f"**{uid}**\n\n{profile['user_profile']}"
                         result = format_response(
-                            answer=f"**{uid}**\n\n{profile['user_profile']}",
+                            answer=answer,
                             intent="USER_SEARCH",
                             confidence=1.0,
                             raw_users=[profile],
                             exact_match=True,
                         )
                         result["trace_id"] = trace_id
+                        evaluate_in_background(
+                            trace_id, query, answer,
+                            intent="USER_SEARCH",
+                            exact_match=True,
+                        )
                         return result
 
                 result = format_response(
@@ -217,11 +228,19 @@ class ChatEngine:
         )
         result["trace_id"] = trace_id
 
-        # 9. Heuristic quality scores — posted to Langfuse via SDK (no LLM call)
+        # 9. Layer 1: heuristic quality scores — no LLM call, runs inline
         score_response_quality(
             trace_id, answer, intent,
             confidence=confidence,
             source_count=source_count,
+        )
+
+        # 10. Layer 2: RAGAS quality eval — runs in background thread, non-blocking
+        evaluate_in_background(
+            trace_id, query, answer, intent,
+            doc_hits=doc_hits,
+            artifact_hits=artifact_hits,
+            user_hits=user_hits,
         )
 
         return result
