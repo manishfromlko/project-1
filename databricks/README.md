@@ -125,6 +125,8 @@ vsc.create_endpoint(
 
 Using **managed embeddings** means Databricks calls the embedding model automatically on every Delta table sync — no separate embedding job needed.
 
+Create all three indexes now — it is fine to create them against empty tables. The index metadata is registered immediately; embeddings are generated on the first `.sync()` call, which happens at the end of the ingestion workflow (Step 7). **Do not call `.sync()` here.**
+
 ```python
 # Artifact chunks index
 vsc.create_delta_sync_index(
@@ -160,12 +162,7 @@ vsc.create_delta_sync_index(
 )
 ```
 
-Trigger an initial sync after the ingestion job writes rows:
-
-```python
-vsc.get_index("kubeflow-intelligence-endpoint",
-              "kubeflow.intelligence.artifact_chunks_index").sync()
-```
+After this step, indexes exist but are empty. Proceed to Steps 4–6, then run the ingestion workflow in Step 7. Task 4 of the workflow (`04_sync_vector_indexes.py`) will call `.sync()` on all three indexes once data is in the Delta tables.
 
 ---
 
