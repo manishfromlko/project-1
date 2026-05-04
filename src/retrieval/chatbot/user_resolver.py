@@ -16,7 +16,8 @@ from typing import Dict, List, Optional, Tuple
 
 from rapidfuzz import fuzz
 
-from ...observability import make_llm_client, litellm_metadata
+from ...observability import litellm_metadata
+from ..config import make_openai_client
 from ..user_profile_store import UserProfileStore
 from .prompt_loader import load_prompt
 
@@ -114,7 +115,7 @@ class UserNameResolver:
     """
 
     def __init__(self, user_store: UserProfileStore, model: str = "gpt-4o-mini"):
-        self.client = make_llm_client()
+        self.client = make_openai_client()
         self.model = model
         self.user_store = user_store
         self._system_prompt = load_prompt("chatbot/user_resolution/system.txt")

@@ -2,11 +2,10 @@
 
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from ..observability import make_llm_client
+from .config import make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +186,6 @@ def _call_llm(client, model: str, prompt: str) -> Optional[Dict]:
 
 def generate_profiles(
     catalog_path: str,
-    openai_api_key: str,
     model: str = "gpt-4o-mini",
 ) -> List[Dict]:
     """
@@ -206,7 +204,7 @@ def generate_profiles(
             artifacts_by_ws.setdefault(ws, []).append(art)
 
     prompt_template = _load_prompt_template()
-    client = make_llm_client()
+    client = make_openai_client()
 
     profiles: List[Dict] = []
     for user_id, artifacts in artifacts_by_ws.items():

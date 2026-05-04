@@ -1,11 +1,11 @@
-"""Generate artifact-level summaries and tags via OpenAI chat completion."""
+"""Generate artifact-level summaries and tags via LiteLLM chat completion."""
 
 import json
 import logging
 from pathlib import Path
 from typing import Dict, List
 
-from ..observability import make_llm_client
+from .config import make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def generate_artifact_summaries(
         catalog = json.load(f)
 
     prompt_template = _load_prompt_template()
-    client = make_llm_client()
+    client = make_openai_client()
     artifacts = list(catalog.get("artifacts", {}).values())
 
     summaries: List[Dict] = []

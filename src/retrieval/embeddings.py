@@ -4,8 +4,7 @@ import hashlib
 import logging
 from typing import Any, Dict, List, Optional
 
-from ..observability import make_llm_client
-from .config import RetrievalConfig
+from .config import RetrievalConfig, make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,7 @@ class EmbeddingService:
 
     def __init__(self, config: RetrievalConfig):
         self.config = config
-        self.client = make_llm_client()
+        self.client = make_openai_client()
         self._cache: Dict[str, List[float]] = {}
         logger.info(f"EmbeddingService ready (model={config.embedding_model})")
 

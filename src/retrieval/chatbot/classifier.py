@@ -4,7 +4,8 @@ import json
 import logging
 from typing import Dict, Optional
 
-from ...observability import make_llm_client, litellm_metadata
+from ...observability import litellm_metadata
+from ..config import make_openai_client
 from .prompt_loader import load_prompt
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class IntentClassifier:
     """Uses an LLM to classify query intent."""
 
     def __init__(self, model: str = "gpt-4o-mini"):
-        self.client = make_llm_client()
+        self.client = make_openai_client()
         self.model = model
         self._system_prompt = load_prompt("chatbot/classifier/system.txt")
 

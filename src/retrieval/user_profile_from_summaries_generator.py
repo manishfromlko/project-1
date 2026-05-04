@@ -12,10 +12,8 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from ..observability import make_llm_client
-
 from .artifact_summary_store import ArtifactSummaryStore
-from .config import RetrievalConfig
+from .config import RetrievalConfig, make_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +95,7 @@ def generate_profiles_from_summaries(
     logger.info(f"Found summaries for {len(summaries_by_user)} users")
 
     prompt_template = _load_prompt_template()
-    client = make_llm_client()
+    client = make_openai_client()
     profiles: List[Dict] = []
 
     for user_id, summaries in summaries_by_user.items():
