@@ -41,7 +41,6 @@ for row in new_artifacts:
             "artifact_summary": summary,
             "artifact_type":    row.file_type,
             "file_path":        row.artifact_id,
-            "metadata":         {},
         })
     except Exception as e:
         print(f"SKIP summary {row.artifact_id}: {e}")
