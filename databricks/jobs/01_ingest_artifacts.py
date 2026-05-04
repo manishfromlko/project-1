@@ -40,7 +40,7 @@ for root, _dirs, files in os.walk(VOLUME_PATH):
                     "file_path":   path,
                     "file_type":   artifact.file_type,
                     "sha256_hash": sha256,
-                    "metadata":    artifact.metadata,
+                    # metadata (MAP type) is excluded — Vector Search does not support MAP columns
                 })
         except Exception as e:
             print(f"SKIP {path}: {e}")

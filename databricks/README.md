@@ -10,7 +10,7 @@ Replicates the full Kubeflow Workspace Intelligence chatbot stack on Databricks,
 |-----------------------|----------------------|
 | Milvus (3 collections) | Databricks Vector Search (3 indexes backed by Delta tables) |
 | LiteLLM proxy (port 4000) | Databricks Foundation Model APIs or external model endpoints via Model Serving |
-| OpenAI text-embedding-3-small | Foundation Model API `databricks-bge-large-en` (or keep OpenAI) |
+| OpenAI text-embedding-3-small | Databricks Model Serving external endpoint `text-embedding-3-small` |
 | gpt-4o-mini (classify / rewrite / generate) | `databricks-meta-llama-3-3-70b-instruct` or any served model |
 | gpt-4o (RAGAS eval / LLM judge) | `databricks-meta-llama-3-1-405b-instruct` or Azure OpenAI via serving |
 | Langfuse (traces + scores) | MLflow Tracing (MLflow ≥ 2.14, built into Databricks Runtime 15.4+) |
@@ -63,8 +63,6 @@ Vector Search indexes in Databricks are backed by a **source Delta table** (one 
 
 ```python
 # Run in a Databricks notebook
-from pyspark.sql.types import StructType, StructField, StringType, ArrayType, FloatType, MapType
-
 spark.sql("""
   CREATE TABLE IF NOT EXISTS kubeflow.intelligence.artifact_chunks (
     chunk_id     STRING NOT NULL,
@@ -73,8 +71,7 @@ spark.sql("""
     chunk_index  INT,
     file_path    STRING,
     file_type    STRING,
-    sha256_hash  STRING,
-    metadata     MAP<STRING, STRING>
+    sha256_hash  STRING
   )
   USING DELTA
   TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')
@@ -85,8 +82,7 @@ spark.sql("""
     artifact_id       STRING NOT NULL,
     artifact_summary  STRING,
     artifact_type     STRING,
-    file_path         STRING,
-    metadata          MAP<STRING, STRING>
+    file_path         STRING
   )
   USING DELTA
   TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')
@@ -96,8 +92,7 @@ spark.sql("""
   CREATE TABLE IF NOT EXISTS kubeflow.intelligence.user_profiles (
     user_id       STRING NOT NULL,
     user_profile  STRING,
-    display_name  STRING,
-    metadata      MAP<STRING, STRING>
+    display_name  STRING
   )
   USING DELTA
   TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')
@@ -105,6 +100,8 @@ spark.sql("""
 ```
 
 > `delta.enableChangeDataFeed = true` is **required** — Vector Search uses it to detect row-level changes and sync indexes incrementally.
+>
+> **Note:** Vector Search does not support `MAP`, `STRUCT`, or `ARRAY` column types. Drop them from the source table or cast to `STRING` (JSON) before syncing. The `metadata` column has been removed — add individual `STRING` columns if you need filterable fields (e.g. `workspace_id STRING`, `language STRING`).
 
 ---
 
@@ -137,7 +134,7 @@ vsc.create_delta_sync_index(
     pipeline_type="TRIGGERED",            # CONTINUOUS for real-time; TRIGGERED for batch
     primary_key="chunk_id",
     embedding_source_column="chunk_text",
-    embedding_model_endpoint_name="databricks-bge-large-en",
+    embedding_model_endpoint_name="text-embedding-3-small",
 )
 
 # Artifact summaries index
@@ -148,7 +145,7 @@ vsc.create_delta_sync_index(
     pipeline_type="TRIGGERED",
     primary_key="artifact_id",
     embedding_source_column="artifact_summary",
-    embedding_model_endpoint_name="databricks-bge-large-en",
+    embedding_model_endpoint_name="text-embedding-3-small",
 )
 
 # User profiles index
@@ -159,7 +156,7 @@ vsc.create_delta_sync_index(
     pipeline_type="TRIGGERED",
     primary_key="user_id",
     embedding_source_column="user_profile",
-    embedding_model_endpoint_name="databricks-bge-large-en",
+    embedding_model_endpoint_name="text-embedding-3-small",
 )
 ```
 
@@ -182,7 +179,7 @@ Already available in every workspace. Use these model names directly in your cod
 |------|------------------------|
 | Classify / rewrite / generate | `databricks-meta-llama-3-3-70b-instruct` |
 | RAGAS eval + LLM judge | `databricks-meta-llama-3-1-405b-instruct` |
-| Embeddings | `databricks-bge-large-en` |
+| Embeddings | `text-embedding-3-small` |
 
 Call them with the standard OpenAI SDK — Databricks exposes an OpenAI-compatible REST API:
 
@@ -374,7 +371,7 @@ def _make_ragas_components():
         base_url=f"{host}/serving-endpoints",
     )
     llm = llm_factory(_EVAL_MODEL, client=client)
-    emb = OpenAIEmbeddings(client=client, model="databricks-bge-large-en")
+    emb = OpenAIEmbeddings(client=client, model="text-embedding-3-small")
     return llm, emb
 
 
@@ -739,7 +736,7 @@ chat  [CHAIN span, root]
 | `DATABRICKS_HOST` | `https://<workspace>.azuredatabricks.net` | From secret scope |
 | `DATABRICKS_TOKEN` | PAT or SP token | From secret scope |
 | `VECTOR_SEARCH_ENDPOINT` | `kubeflow-intelligence-endpoint` | Created in Step 3 |
-| `EMBEDDING_MODEL` | `databricks-bge-large-en` | Used by managed embeddings |
+| `EMBEDDING_MODEL` | `text-embedding-3-small` | Used by managed embeddings |
 | `LLM_MODEL` | `databricks-meta-llama-3-3-70b-instruct` | classify / rewrite / generate |
 | `EVAL_MODEL` | `databricks-meta-llama-3-1-405b-instruct` | RAGAS eval |
 | `JUDGE_MODEL` | `databricks-meta-llama-3-1-405b-instruct` | profile_relevance LLM judge |

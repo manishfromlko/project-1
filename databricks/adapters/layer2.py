@@ -44,7 +44,7 @@ def _make_ragas_components():
     token = os.environ["DATABRICKS_TOKEN"]
     client = AsyncOpenAI(api_key=token, base_url=f"{host}/serving-endpoints")
     llm = llm_factory(_EVAL_MODEL, client=client)
-    emb = OpenAIEmbeddings(client=client, model="databricks-bge-large-en")
+    emb = OpenAIEmbeddings(client=client, model="text-embedding-3-small")
     return llm, emb
 
 

@@ -35,7 +35,6 @@ for row in summaries_by_user:
             "user_id":      row.user_id,
             "user_profile": profile,
             "display_name": row.user_id.replace(".", " ").title(),
-            "metadata":     {},
         })
     except Exception as e:
         print(f"SKIP profile {row.user_id}: {e}")
